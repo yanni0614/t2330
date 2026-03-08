@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配對交易回測系統 | 台積電 × 台指期</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #050a10;
+    --bg2: #090f18;
+    --panel: #0d1520;
+    --border: #1a2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --green: #00ff87;
+    --red: #ff3366;
+    --yellow: #ffd700;
+    --text: #c8d8e8;
+    --dim: #4a6a8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    font-size: 14px;
+    position: relative;
+  }
+  .logo-icon::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(0,212,255,0.3);
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .controls::before {
+    content: '// STRATEGY PARAMETERS';
+    position: absolute;
+    top: -10px; left: 20px;
+    background: var(--panel);
+    padding: 0 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  .ctrl-group label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .ctrl-group input, .ctrl-group select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .ctrl-group input:focus, .ctrl-group select:focus {
+    border-color: var(--accent);
+  }
+
+  .ctrl-group input[type=range] {
+    padding: 4px 0;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  .range-val {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    font-size: 13px;
+    margin-left: 8px;
+  }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    align-self: flex-end;
+  }
+
+  .btn:hover {
+    background: rgba(0,212,255,0.1);
+    box-shadow: 0 0 20px rgba(0,212,255,0.2);
+  }
+
+  /* KPI row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kpi {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi.pos::after { background: var(--green); }
+  .kpi.neg::after { background: var(--red); }
+  .kpi.neu::after { background: var(--accent); }
+  .kpi.warn::after { background: var(--yellow); }
+
+  .kpi-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .kpi-value.pos { color: var(--green); }
+  .kpi-value.neg { color: var(--red); }
+  .kpi-value.neu { color: var(--accent); }
+  .kpi-value.warn { color: var(--yellow); }
+
+  .kpi-sub {
+    font-size: 10px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  /* Charts grid */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .chart-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px;
+    position: relative;
+  }
+
+  .chart-panel h3 {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chart-panel h3 span {
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .chart-wrap { position: relative; height: 280px; }
+
+  /* Trades table */
+  .table-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .table-panel h3 {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-scroll { max-height: 280px; overflow-y: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+
+  thead th {
+    position: sticky; top: 0;
+    background: var(--bg2);
+    color: var(--dim);
+    letter-spacing: 1px;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(26,45,69,0.5);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(0,212,255,0.04); }
+
+  tbody td {
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    border: 1px solid;
+  }
+
+  .tag-long { color: var(--green); border-color: var(--green); background: rgba(0,255,135,0.05); }
+  .tag-exit { color: var(--red); border-color: var(--red); background: rgba(255,51,102,0.05); }
+
+  .win { color: var(--green); }
+  .lose { color: var(--red); }
+  .hold { color: var(--yellow); }
+
+  /* Signal explanation */
+  .signal-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .signal-rule h4 {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .signal-rule p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  .formula {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-top: 8px;
+    line-height: 1.8;
+  }
+
+  /* Loading overlay */
+  #loading {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s;
+  }
+
+  .loader-text {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 4px;
+    font-size: 14px;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink { 0%,100% {opacity:1} 50% {opacity:0.3} }
+
+  .loader-bar {
+    width: 300px;
+    height: 2px;
+    background: var(--border);
+    margin-top: 20px;
+    overflow: hidden;
+  }
+
+  .loader-fill {
+    height: 100%;
+    background: var(--accent);
+    animation: fill 1.5s ease-out forwards;
+  }
+
+  @keyframes fill { from {width:0} to {width:100%} }
+
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .disclaimer {
+    font-size: 10px;
+    color: var(--dim);
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+    letter-spacing: 1px;
+    line-height: 1.8;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader-text">INITIALIZING PAIRS TRADING ENGINE...</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">PT</div>
+      <div>
+        <h1>配對交易 <span>PAIRS TRADING</span></h1>
+        <div class="subtitle">台積電電子期 × 台指期 ｜ 月績效差異策略</div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span style="color:var(--green)">SIMULATION ACTIVE</span>
+      <span style="color:var(--dim)">|</span>
+      <span id="clock" style="color:var(--accent)"></span>
+    </div>
+  </header>
+
+  <!-- Signal Rules -->
+  <div class="signal-box">
+    <div class="signal-rule">
+      <h4>📈 進場訊號（做多配對）</h4>
+      <p>買進電子期 / 賣出台指期</p>
+      <div class="formula">
+        當日_台積電_月績效 &gt; 當日_台指期_月績效<br>
+        Perf_TSMC(t,t-21) &gt; Perf_TX(t,t-21)
+      </div>
+    </div>
+    <div class="signal-rule">
+      <h4>📉 出場訊號（平倉）</h4>
+      <p>賣出電子期 / 回補台指期</p>
+      <div class="formula">
+        當日_台積電_月績效 ≤ 當日_台指期_月績效<br>
+        Perf_TSMC(t,t-21) ≤ Perf_TX(t,t-21)
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="ctrl-group">
+      <label>回測起始年份</label>
+      <select id="startYear">
+        <option value="2019">2019</option>
+        <option value="2020" selected>2020</option>
+        <option value="2021">2021</option>
+        <option value="2022">2022</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>初始資金 (萬)</label>
+      <input type="number" id="capital" value="300" min="50" max="10000" step="50">
+    </div>
+    <div class="ctrl-group">
+      <label>月績效回望天數</label>
+      <input type="range" id="lookback" min="15" max="30" value="21">
+      <span class="range-val" id="lookbackVal">21</span> 天
+    </div>
+    <div class="ctrl-group">
+      <label>電子期口數</label>
+      <input type="number" id="eLotsInput" value="1" min="1" max="10">
+    </div>
+    <div class="ctrl-group">
+      <label>台指期口數</label>
+      <input type="number" id="txLotsInput" value="1" min="1" max="10">
+    </div>
+    <div class="ctrl-group" style="display:flex; align-items:flex-end;">
+      <button class="btn" onclick="runBacktest()">▶ 執行回測</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi neu">
+      <div class="kpi-label">總損益 (萬)</div>
+      <div class="kpi-value neu" id="kpi-pnl">—</div>
+      <div class="kpi-sub" id="kpi-pnl-sub">—</div>
+    </div>
+    <div class="kpi pos">
+      <div class="kpi-label">勝率</div>
+      <div class="kpi-value pos" id="kpi-wr">—</div>
+      <div class="kpi-sub" id="kpi-wr-sub">—</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">總交易次數</div>
+      <div class="kpi-value warn" id="kpi-trades">—</div>
+      <div class="kpi-sub">完整進出場配對</div>
+    </div>
+    <div class="kpi neg">
+      <div class="kpi-label">最大回撤 (萬)</div>
+      <div class="kpi-value neg" id="kpi-dd">—</div>
+      <div class="kpi-sub" id="kpi-dd-sub">—</div>
+    </div>
+    <div class="kpi pos">
+      <div class="kpi-label">平均持倉天數</div>
+      <div class="kpi-value pos" id="kpi-hold">—</div>
+      <div class="kpi-sub">天/筆</div>
+    </div>
+    <div class="kpi neu">
+      <div class="kpi-label">年化報酬率</div>
+      <div class="kpi-value neu" id="kpi-annual">—</div>
+      <div class="kpi-sub" id="kpi-annual-sub">—</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-panel">
+      <h3>累積損益曲線 <span id="pnl-latest">NTD 0</span></h3>
+      <div class="chart-wrap"><canvas id="pnlChart"></canvas></div>
+    </div>
+    <div class="chart-panel">
+      <h3>月績效差值 (TSMC - TX) <span id="diff-latest">0.00%</span></h3>
+      <div class="chart-wrap"><canvas id="diffChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <!-- Performance comparison chart -->
+    <div class="chart-panel">
+      <h3>台積電 vs 台指期 月滾動績效</h3>
+      <div class="chart-wrap"><canvas id="perfChart"></canvas></div>
+    </div>
+
+    <!-- Trade list -->
+    <div class="table-panel">
+      <h3>交易明細</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>進場日</th>
+              <th>出場日</th>
+              <th>持倉</th>
+              <th>電子期PnL</th>
+              <th>台指PnL</th>
+              <th>淨損益</th>
+              <th>狀態</th>
+            </tr>
+          </thead>
+          <tbody id="tradeTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠ 本系統使用模擬價格進行策略驗證，非實際市場資料。電子期指數乘數 4,000、台指期乘數 200（小台50）。月績效 = (當日收盤 / 21日前收盤 - 1) × 100%。回測結果不代表未來績效，期貨交易具有槓桿風險，請審慎評估。
+  </div>
+</div>
+
+<script>
+// ── 模擬資料產生器 ────────────────────────────────────────────────
+function generateSimData(startYear) {
+  const data = [];
+  // 以真實走勢特性建模
+  let tsmc = 350, tx = 11000;
+  const startDate = new Date(startYear, 0, 1);
+  const endDate = new Date(2024, 11, 31);
+
+  // 相關性 + 各自alpha
+  let tsmcMom = 0, txMom = 0;
+  const seed = (startYear - 2019) * 17;
+
+  function rng(s) {
+    let x = Math.sin(s) * 10000;
+    return x - Math.floor(x);
+  }
+
+  let idx = seed;
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) continue; // 跳過週末
+
+    idx++;
+    const common = (rng(idx * 3.7) - 0.5) * 0.015;
+    const tsmcAlpha = (rng(idx * 1.3) - 0.485) * 0.012;
+    const txAlpha = (rng(idx * 2.1) - 0.49) * 0.008;
+
+    tsmcMom = tsmcMom * 0.95 + common + tsmcAlpha;
+    txMom = txMom * 0.95 + common * 0.8 + txAlpha;
+
+    tsmc = tsmc * (1 + tsmcMom * 0.3);
+    tx = tx * (1 + txMom * 0.3);
+
+    // 限制在合理範圍
+    tsmc = Math.max(200, Math.min(1100, tsmc));
+    tx = Math.max(8000, Math.min(25000, tx));
+
+    data.push({
+      date: new Date(d),
+      tsmc: +tsmc.toFixed(1),
+      tx: +tx.toFixed(0),
+    });
+  }
+  return data;
+}
+
+// ── 回測引擎 ──────────────────────────────────────────────────────
+function computePerf(data, i, lookback) {
+  if (i < lookback) return { tsmcPerf: 0, txPerf: 0 };
+  const prev = data[i - lookback];
+  const curr = data[i];
+  return {
+    tsmcPerf: (curr.tsmc / prev.tsmc - 1) * 100,
+    txPerf: (curr.tx / prev.tx - 1) * 100,
+  };
+}
+
+let charts = {};
+
+function runBacktest() {
+  const startYear = +document.getElementById('startYear').value;
+  const capital = +document.getElementById('capital').value * 10000;
+  const lookback = +document.getElementById('lookback').value;
+  const eLots = +document.getElementById('eLotsInput').value;
+  const txLots = +document.getElementById('txLotsInput').value;
+
+  // 乘數：電子期4000點/1pt 差簡化，小台200
+  const E_MULT = 4000;
+  const TX_MULT = 200;
+
+  const data = generateSimData(startYear);
+
+  // 計算每日月績效
+  const signals = data.map((d, i) => {
+    const { tsmcPerf, txPerf } = computePerf(data, i, lookback);
+    return { ...d, tsmcPerf, txPerf, diff: tsmcPerf - txPerf };
+  });
+
+  // 回測
+  let inTrade = false;
+  let entryIdx = null, entryTsmc, entryTx;
+  const trades = [];
+  const pnlCurve = [];
+  let cumPnl = 0;
+
+  for (let i = lookback; i < signals.length; i++) {
+    const s = signals[i];
+    const signal = s.diff > 0; // true = 持倉
+
+    if (!inTrade && signal) {
+      // 進場
+      inTrade = true;
+      entryIdx = i;
+      entryTsmc = s.tsmc;
+      entryTx = s.tx;
+    } else if (inTrade && !signal) {
+      // 出場
+      const days = i - entryIdx;
+      const eReturn = (s.tsmc - entryTsmc) * E_MULT / 1000 * eLots;
+      const txReturn = -(s.tx - entryTx) * TX_MULT / 1000 * txLots;
+      const cost = 2 * (eLots * 200 + txLots * 50); // 手續費估算(元)
+      const net = eReturn + txReturn - cost / 10000;
+      cumPnl += net;
+
+      trades.push({
+        entry: signals[entryIdx].date,
+        exit: s.date,
+        days,
+        eReturn: +eReturn.toFixed(2),
+        txReturn: +txReturn.toFixed(2),
+        net: +net.toFixed(2),
+        cumPnl: +cumPnl.toFixed(2),
+      });
+
+      inTrade = false;
+    }
+
+    pnlCurve.push({
+      date: s.date,
+      pnl: +cumPnl.toFixed(2),
+      inTrade,
+      diff: +s.diff.toFixed(3),
+      tsmcPerf: +s.tsmcPerf.toFixed(3),
+      txPerf: +s.txPerf.toFixed(3),
+    });
+  }
+
+  // 未平倉
+  if (inTrade) {
+    const last = signals[signals.length - 1];
+    const days = signals.length - 1 - entryIdx;
+    const eReturn = (last.tsmc - entryTsmc) * E_MULT / 1000 * eLots;
+    const txReturn = -(last.tx - entryTx) * TX_MULT / 1000 * txLots;
+    const net = eReturn + txReturn;
+    trades.push({
+      entry: signals[entryIdx].date,
+      exit: null,
+      days,
+      eReturn: +eReturn.toFixed(2),
+      txReturn: +txReturn.toFixed(2),
+      net: +net.toFixed(2),
+      cumPnl: +(cumPnl + net).toFixed(2),
+      open: true,
+    });
+  }
+
+  // 計算指標
+  const closed = trades.filter(t => !t.open);
+  const wins = closed.filter(t => t.net > 0).length;
+  const winRate = closed.length ? (wins / closed.length * 100).toFixed(1) : 0;
+  const totalPnl = cumPnl;
+  const avgHold = closed.length ? (closed.reduce((a, t) => a + t.days, 0) / closed.length).toFixed(1) : 0;
+
+  // 最大回撤
+  let peak = 0, maxDD = 0;
+  pnlCurve.forEach(p => {
+    if (p.pnl > peak) peak = p.pnl;
+    const dd = peak - p.pnl;
+    if (dd > maxDD) maxDD = dd;
+  });
+
+  const totalDays = pnlCurve.length;
+  const years = totalDays / 252;
+  const annualized = years > 0 ? ((totalPnl / (capital / 10000) + 1) ** (1 / years) - 1) * 100 : 0;
+
+  // 更新KPI
+  const pnlEl = document.getElementById('kpi-pnl');
+  pnlEl.textContent = totalPnl >= 0 ? `+${totalPnl.toFixed(1)}` : `${totalPnl.toFixed(1)}`;
+  pnlEl.className = 'kpi-value ' + (totalPnl >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-pnl-sub').textContent = `起始資金 ${(capital / 10000).toFixed(0)} 萬`;
+
+  document.getElementById('kpi-wr').textContent = `${winRate}%`;
+  document.getElementById('kpi-wr-sub').textContent = `${wins}勝 / ${closed.length - wins}負`;
+  document.getElementById('kpi-trades').textContent = closed.length;
+  document.getElementById('kpi-dd').textContent = `-${maxDD.toFixed(1)}`;
+  document.getElementById('kpi-dd-sub').textContent = `峰谷最大回撤`;
+  document.getElementById('kpi-hold').textContent = avgHold;
+  const annEl = document.getElementById('kpi-annual');
+  annEl.textContent = `${annualized >= 0 ? '+' : ''}${annualized.toFixed(1)}%`;
+  annEl.className = 'kpi-value ' + (annualized >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-annual-sub').textContent = `${years.toFixed(1)} 年回測`;
+
+  // 取樣縮減（最多600點）
+  const step = Math.max(1, Math.floor(pnlCurve.length / 600));
+  const sampled = pnlCurve.filter((_, i) => i % step === 0);
+  const labels = sampled.map(p => p.date.toLocaleDateString('zh-TW', { year: '2-digit', month: '2-digit' }));
+
+  // 損益曲線
+  destroyChart('pnlChart');
+  const pnlCtx = document.getElementById('pnlChart').getContext('2d');
+  const pnlGrad = pnlCtx.createLinearGradient(0, 0, 0, 280);
+  pnlGrad.addColorStop(0, 'rgba(0,255,135,0.3)');
+  pnlGrad.addColorStop(1, 'rgba(0,255,135,0)');
+
+  charts['pnlChart'] = new Chart(pnlCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: sampled.map(p => p.pnl),
+        borderColor: '#00ff87',
+        borderWidth: 1.5,
+        backgroundColor: pnlGrad,
+        fill: true,
+        pointRadius: 0,
+        tension: 0.3,
+      }]
+    },
+    options: chartOptions('萬 TWD', totalPnl)
+  });
+
+  document.getElementById('pnl-latest').textContent =
+    `NTD ${(totalPnl * 10000).toLocaleString()}`;
+
+  // 差值圖
+  destroyChart('diffChart');
+  const diffCtx = document.getElementById('diffChart').getContext('2d');
+  charts['diffChart'] = new Chart(diffCtx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: sampled.map(p => p.diff),
+        backgroundColor: sampled.map(p => p.diff > 0 ? 'rgba(0,212,255,0.6)' : 'rgba(255,51,102,0.5)'),
+        borderWidth: 0,
+      }]
+    },
+    options: chartOptions('%', 0, true)
+  });
+
+  const lastDiff = pnlCurve[pnlCurve.length - 1]?.diff ?? 0;
+  document.getElementById('diff-latest').textContent =
+    `${lastDiff >= 0 ? '+' : ''}${lastDiff.toFixed(2)}%`;
+
+  // 月績效比較
+  destroyChart('perfChart');
+  const perfCtx = document.getElementById('perfChart').getContext('2d');
+  charts['perfChart'] = new Chart(perfCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '台積電月績效',
+          data: sampled.map(p => p.tsmcPerf),
+          borderColor: '#00d4ff',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: false,
+        },
+        {
+          label: '台指期月績效',
+          data: sampled.map(p => p.txPerf),
+          borderColor: '#ff6b35',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      ...chartOptions('%', 0),
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#4a6a8a', font: { size: 11 }, boxWidth: 12 }
+        }
+      }
+    }
+  });
+
+  // 交易明細表
+  const tbody = document.getElementById('tradeTable');
+  tbody.innerHTML = '';
+  trades.slice().reverse().forEach((t, i) => {
+    const tr = document.createElement('tr');
+    const fmt = d => d ? d.toLocaleDateString('zh-TW') : '未平倉';
+    const netClass = t.open ? 'hold' : (t.net >= 0 ? 'win' : 'lose');
+    const netStr = t.open ? `~${t.net.toFixed(2)}` : (t.net >= 0 ? `+${t.net.toFixed(2)}` : `${t.net.toFixed(2)}`);
+    tr.innerHTML = `
+      <td style="color:var(--dim)">${trades.length - i}</td>
+      <td><span class="tag tag-long">LONG</span> ${fmt(t.entry)}</td>
+      <td><span class="tag tag-exit">${t.open ? 'OPEN' : 'EXIT'}</span> ${fmt(t.exit)}</td>
+      <td>${t.days}d</td>
+      <td class="${t.eReturn >= 0 ? 'win' : 'lose'}">${t.eReturn >= 0 ? '+' : ''}${t.eReturn}</td>
+      <td class="${t.txReturn >= 0 ? 'win' : 'lose'}">${t.txReturn >= 0 ? '+' : ''}${t.txReturn}</td>
+      <td class="${netClass}" style="font-weight:700">${netStr} 萬</td>
+      <td>${t.open ? '<span style="color:var(--yellow)">●持倉中</span>' : (t.net >= 0 ? '<span style="color:var(--green)">✓獲利</span>' : '<span style="color:var(--red)">✗虧損</span>')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function chartOptions(unit, refVal, isBar = false) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 600 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0d1520',
+        borderColor: '#1a2d45',
+        borderWidth: 1,
+        titleColor: '#4a6a8a',
+        bodyColor: '#c8d8e8',
+        bodyFont: { family: 'Share Tech Mono', size: 12 },
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.y.toFixed(2)} ${unit}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#2a4a6a', font: { size: 10 }, maxTicksLimit: 8 },
+        grid: { color: 'rgba(26,45,69,0.5)' },
+        border: { color: '#1a2d45' }
+      },
+      y: {
+        ticks: { color: '#2a4a6a', font: { size: 10, family: 'Share Tech Mono' } },
+        grid: { color: 'rgba(26,45,69,0.3)' },
+        border: { color: '#1a2d45' }
+      }
+    }
+  };
+}
+
+// 時鐘
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('zh-TW', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// 滑桿
+document.getElementById('lookback').addEventListener('input', function() {
+  document.getElementById('lookbackVal').textContent = this.value;
+});
+
+// 初始化
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loading').style.opacity = '0';
+    setTimeout(() => { document.getElementById('loading').style.display = 'none'; }, 500);
+    runBacktest();
+  }, 1500);
+});
+</script>
+</body>
+</html>
