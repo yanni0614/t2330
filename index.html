@@ -3,268 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>配對交易回測系統 v2</title>
+<title>配對交易回測系統 v6</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;700&display=swap');
-:root {
-  --bg:#050a10; --bg2:#090f18; --panel:#0d1520; --border:#1a2d45;
-  --accent:#00d4ff; --green:#00ff87; --red:#ff3366; --yellow:#ffd700;
-  --orange:#ff6b35; --text:#c8d8e8; --dim:#4a6a8a;
+:root{
+  --bg:#050a10;--bg2:#090f18;--panel:#0d1520;--border:#1a2d45;
+  --accent:#00d4ff;--green:#00ff87;--red:#ff3366;--yellow:#ffd700;
+  --orange:#ff6b35;--text:#c8d8e8;--dim:#4a6a8a;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:var(--bg); color:var(--text); font-family:'Noto Sans TC',sans-serif; font-size:13px; line-height:1.5; min-height:100vh; }
-body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
-.container { position:relative; z-index:1; max-width:1440px; margin:0 auto; padding:20px; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;font-size:13px;line-height:1.5;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:20px;}
+
+/* ── LOADING SCREEN ── */
+#loadScreen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.5s;}
+#loadScreen.hidden{opacity:0;pointer-events:none;}
+.load-title{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);letter-spacing:4px;margin-bottom:32px;}
+.load-title span{color:var(--green);}
+.load-bar-wrap{width:320px;height:2px;background:var(--border);margin-bottom:14px;overflow:hidden;}
+.load-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));width:0;transition:width 0.35s ease;}
+.load-msg{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;min-height:16px;text-align:center;}
+
+
 
 /* ── HEADER ── */
-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
-.logo { display:flex; align-items:center; gap:12px; }
-.logo-icon { width:38px; height:38px; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-family:'Share Tech Mono',monospace; color:var(--accent); font-size:14px; position:relative; }
-.logo-icon::after { content:''; position:absolute; inset:3px; border:1px solid rgba(0,212,255,0.25); }
-h1 { font-size:18px; font-weight:700; letter-spacing:2px; color:#fff; }
-h1 span { color:var(--accent); }
-.subtitle { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--dim); letter-spacing:2px; margin-top:2px; }
-.hdr-right { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-.status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.badge { background:rgba(0,212,255,0.07); border:1px solid rgba(0,212,255,0.25); padding:4px 12px; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent); }
-.badge.green { background:rgba(0,255,135,0.07); border-color:rgba(0,255,135,0.3); color:var(--green); }
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:38px;height:38px;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:14px;position:relative;}
+.logo-icon::after{content:'';position:absolute;inset:3px;border:1px solid rgba(0,212,255,0.25);}
+h1{font-size:18px;font-weight:700;letter-spacing:2px;color:#fff;}
+h1 span{color:var(--accent);}
+.subtitle{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:2px;}
+.hdr-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.badge{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.25);padding:4px 12px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);white-space:nowrap;}
+.badge.green{background:rgba(0,255,135,0.07);border-color:rgba(0,255,135,0.3);color:var(--green);}
+.badge.yellow{background:rgba(255,215,0,0.07);border-color:rgba(255,215,0,0.3);color:var(--yellow);}
+.badge.red{background:rgba(255,51,102,0.07);border-color:rgba(255,51,102,0.3);color:var(--red);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+.status-dot.loading{background:var(--yellow);box-shadow:0 0 8px var(--yellow);}
+.status-dot.red{background:var(--red);box-shadow:0 0 8px var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-/* ── UPLOAD PANEL ── */
-.upload-panel {
-  background:var(--panel); border:1px solid var(--border); padding:20px;
-  margin-bottom:20px; position:relative;
-}
-.upload-panel::before {
-  content:'// DATA SOURCE'; position:absolute; top:-10px; left:20px;
-  background:var(--panel); padding:0 8px; font-family:'Share Tech Mono',monospace;
-  font-size:10px; color:var(--accent); letter-spacing:2px;
-}
-.upload-grid { display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:end; }
-.upload-modes { display:flex; gap:8px; margin-bottom:16px; }
-.mode-btn {
-  background:transparent; border:1px solid var(--border); color:var(--dim);
-  padding:6px 16px; font-family:'Share Tech Mono',monospace; font-size:11px;
-  letter-spacing:1px; cursor:pointer; transition:all 0.2s;
-}
-.mode-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,0.06); }
-.mode-btn:hover:not(.active) { border-color:var(--dim); color:var(--text); }
+/* ── CONTROL BAR ── */
+.ctrl-bar{background:var(--panel);border:1px solid var(--border);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:relative;}
+.ctrl-bar::before{content:'// STRATEGY PARAMETERS';position:absolute;top:-10px;left:20px;background:var(--panel);padding:0 8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:2px;}
+.ctrl-group{display:flex;align-items:center;gap:8px;}
+.ctrl-group label{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;white-space:nowrap;}
+.ctrl-group input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:'Share Tech Mono',monospace;font-size:13px;outline:none;width:70px;text-align:center;transition:border-color .2s;}
+.ctrl-group input:focus{border-color:var(--accent);}
+.ctrl-sep{width:1px;height:28px;background:var(--border);}
+.run-btn{background:rgba(0,212,255,0.06);border:1px solid var(--accent);color:var(--accent);padding:8px 22px;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;white-space:nowrap;}
+.run-btn:hover{background:rgba(0,212,255,0.16);box-shadow:0 0 18px rgba(0,212,255,0.2);}
+.run-btn:disabled{opacity:.3;cursor:not-allowed;}
+.icon-btn{background:transparent;border:1px solid var(--border);color:var(--dim);padding:8px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.icon-btn:hover{border-color:var(--green);color:var(--green);}
+.icon-btn.cfg:hover{border-color:var(--yellow);color:var(--yellow);}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(0,212,255,0.3);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px;}
+@keyframes sp{to{transform:rotate(360deg)}}
 
-/* Single file (combined) mode */
-.upload-single { display:grid; grid-template-columns:1fr auto auto; gap:16px; align-items:end; }
-/* Multi file (separate) mode */
-.upload-multi { display:grid; grid-template-columns:repeat(3,1fr) auto; gap:16px; align-items:end; }
-
-.file-drop {
-  background:var(--bg); border:1px dashed var(--border); padding:14px 16px;
-  cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
-}
-.file-drop:hover { border-color:var(--accent); background:rgba(0,212,255,0.03); }
-.file-drop.has-file { border-color:var(--green); border-style:solid; }
-.file-drop.has-file::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--green); }
-.file-drop input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
-.file-drop-label { font-size:10px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:6px; }
-.file-drop-name { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.file-drop-hint { font-size:10px; color:var(--dim); }
-.file-drop.has-file .file-drop-name { color:var(--green); }
-
-.params-inline { display:flex; gap:12px; align-items:end; }
-.param-group { }
-.param-group label { display:block; font-size:10px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:6px; }
-.param-group input, .param-group select {
-  background:var(--bg); border:1px solid var(--border); color:var(--text);
-  padding:8px 12px; font-family:'Share Tech Mono',monospace; font-size:13px;
-  outline:none; width:90px; transition:border-color 0.2s;
-}
-.param-group input:focus, .param-group select:focus { border-color:var(--accent); }
-
-.run-btn {
-  background:rgba(0,212,255,0.05); border:1px solid var(--accent); color:var(--accent);
-  padding:10px 28px; font-family:'Share Tech Mono',monospace; font-size:12px;
-  letter-spacing:2px; cursor:pointer; transition:all 0.2s; text-transform:uppercase;
-  white-space:nowrap; align-self:flex-end;
-}
-.run-btn:hover { background:rgba(0,212,255,0.15); box-shadow:0 0 20px rgba(0,212,255,0.2); }
-.run-btn:disabled { opacity:0.3; cursor:not-allowed; }
-
-.col-map { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
-.col-map-title { grid-column:1/-1; font-size:10px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; }
-.col-map select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:7px 10px; font-family:'Share Tech Mono',monospace; font-size:12px; outline:none; }
-.col-map select:focus { border-color:var(--accent); }
-.col-map label { font-size:10px; color:var(--dim); letter-spacing:1px; display:block; margin-bottom:4px; }
-
-.msg-bar { margin-top:12px; padding:8px 14px; font-family:'Share Tech Mono',monospace; font-size:11px; display:none; }
-.msg-bar.error { background:rgba(255,51,102,0.08); border:1px solid rgba(255,51,102,0.3); color:var(--red); display:block; }
-.msg-bar.info  { background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.2); color:var(--accent); display:block; }
-.msg-bar.ok    { background:rgba(0,255,135,0.06); border:1px solid rgba(0,255,135,0.2); color:var(--green); display:block; }
+/* ── ERR BAR ── */
+.err-bar{background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.3);color:var(--red);padding:10px 16px;font-family:'Share Tech Mono',monospace;font-size:11px;margin-bottom:16px;display:none;line-height:1.8;}
 
 /* ── SIGNAL BOX ── */
-.signal-box { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--accent); padding:14px 18px; margin-bottom:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-.signal-rule h4 { font-size:10px; letter-spacing:2px; color:var(--accent); text-transform:uppercase; margin-bottom:6px; }
-.formula { background:var(--bg); border:1px solid var(--border); padding:8px 14px; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--yellow); margin-top:6px; line-height:1.9; }
+.signal-box{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 18px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.signal-rule h4{font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+.formula{background:var(--bg);border:1px solid var(--border);padding:8px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--yellow);margin-top:6px;line-height:1.9;}
 
 /* ── KPI ── */
-.kpi-row { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:18px; }
-.kpi { background:var(--panel); border:1px solid var(--border); padding:14px; position:relative; overflow:hidden; }
-.kpi::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
-.kpi.pos::after { background:var(--green); } .kpi.neg::after { background:var(--red); } .kpi.neu::after { background:var(--accent); } .kpi.warn::after { background:var(--yellow); }
-.kpi-label { font-size:9px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:6px; }
-.kpi-value { font-family:'Share Tech Mono',monospace; font-size:20px; font-weight:700; line-height:1; }
-.kpi-value.pos{color:var(--green);} .kpi-value.neg{color:var(--red);} .kpi-value.neu{color:var(--accent);} .kpi-value.warn{color:var(--yellow);}
-.kpi-sub { font-size:10px; color:var(--dim); margin-top:4px; }
+.kpi-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:18px;}
+.kpi{background:var(--panel);border:1px solid var(--border);padding:14px;position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.pos::after{background:var(--green);}.kpi.neg::after{background:var(--red);}.kpi.neu::after{background:var(--accent);}.kpi.warn::after{background:var(--yellow);}
+.kpi-label{font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+.kpi-value{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;line-height:1;}
+.kpi-value.pos{color:var(--green);}.kpi-value.neg{color:var(--red);}.kpi-value.neu{color:var(--accent);}.kpi-value.warn{color:var(--yellow);}
+.kpi-sub{font-size:10px;color:var(--dim);margin-top:4px;}
 
 /* ── CHARTS ── */
-.charts-top { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:14px; }
-.charts-bot { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
-.chart-panel { background:var(--panel); border:1px solid var(--border); padding:18px; }
-.chart-panel h3 { font-size:10px; letter-spacing:3px; color:var(--dim); text-transform:uppercase; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-.chart-panel h3 em { color:var(--accent); font-style:normal; font-family:'Share Tech Mono',monospace; font-size:11px; }
-.chart-wrap { position:relative; height:240px; }
+.charts-top{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+.charts-bot{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.chart-panel{background:var(--panel);border:1px solid var(--border);padding:18px;}
+.chart-panel h3{font-size:10px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.chart-panel h3 em{color:var(--accent);font-style:normal;font-family:'Share Tech Mono',monospace;font-size:11px;}
+.chart-wrap{position:relative;height:240px;}
 
-/* ── TRADE TABLE ── */
-.table-panel { background:var(--panel); border:1px solid var(--border); padding:18px; }
-.table-panel h3 { font-size:10px; letter-spacing:3px; color:var(--dim); text-transform:uppercase; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
-.table-scroll { max-height:280px; overflow-y:auto; }
-table { width:100%; border-collapse:collapse; font-family:'Share Tech Mono',monospace; font-size:11px; }
-thead th { position:sticky; top:0; background:var(--bg2); color:var(--dim); padding:7px 10px; text-align:left; border-bottom:1px solid var(--border); font-size:9px; text-transform:uppercase; letter-spacing:1px; }
-tbody tr { border-bottom:1px solid rgba(26,45,69,0.4); transition:background 0.12s; }
-tbody tr:hover { background:rgba(0,212,255,0.04); }
-tbody td { padding:7px 10px; white-space:nowrap; }
-.tag { display:inline-block; padding:1px 7px; font-size:9px; letter-spacing:1px; border:1px solid; margin-right:3px; }
-.tag-long { color:var(--green); border-color:var(--green); background:rgba(0,255,135,0.05); }
-.tag-exit { color:var(--red); border-color:var(--red); background:rgba(255,51,102,0.05); }
-.tag-open { color:var(--yellow); border-color:var(--yellow); background:rgba(255,215,0,0.05); }
-.win{color:var(--green);} .lose{color:var(--red);} .hold{color:var(--yellow);}
-
-/* ── DISCLAIMER ── */
-.disclaimer { font-size:10px; color:var(--dim); border-top:1px solid var(--border); padding-top:10px; margin-top:4px; letter-spacing:1px; line-height:1.8; }
-
-/* scrollbar */
+/* ── TABLE ── */
+.table-panel{background:var(--panel);border:1px solid var(--border);padding:18px;}
+.table-panel h3{font-size:10px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.table-panel h3 em{color:var(--dim);font-style:normal;font-family:'Share Tech Mono',monospace;font-size:10px;font-weight:normal;}
+.table-scroll{max-height:280px;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;font-family:'Share Tech Mono',monospace;font-size:11px;}
+thead th{position:sticky;top:0;background:var(--bg2);color:var(--dim);padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);font-size:9px;text-transform:uppercase;letter-spacing:1px;}
+tbody tr{border-bottom:1px solid rgba(26,45,69,0.4);transition:background .12s;}
+tbody tr:hover{background:rgba(0,212,255,0.04);}
+tbody td{padding:7px 10px;white-space:nowrap;}
+.tag{display:inline-block;padding:1px 7px;font-size:9px;letter-spacing:1px;border:1px solid;margin-right:3px;}
+.tag-long{color:var(--green);border-color:var(--green);background:rgba(0,255,135,0.05);}
+.tag-exit{color:var(--red);border-color:var(--red);background:rgba(255,51,102,0.05);}
+.tag-open{color:var(--yellow);border-color:var(--yellow);background:rgba(255,215,0,0.05);}
+.win{color:var(--green);}.lose{color:var(--red);}.hold{color:var(--yellow);}
+.disclaimer{font-size:10px;color:var(--dim);border-top:1px solid var(--border);padding-top:10px;margin-top:4px;letter-spacing:1px;line-height:1.8;}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--border);}
-
-/* spinner */
-.spinner { display:none; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin-left:10px; }
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <!-- HEADER -->
+<!-- ── LOADING SCREEN ── -->
+<div id="loadScreen">
+  <div class="load-title">PAIRS <span>TRADING</span> SYSTEM</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+  <div class="load-msg" id="loadMsg">初始化...</div>
+</div>
+
+
+
+<!-- ── MAIN ── -->
+<div class="wrap">
   <header>
     <div class="logo">
       <div class="logo-icon">PT</div>
       <div>
         <h1>配對交易 <span>PAIRS TRADING</span></h1>
-        <div class="subtitle">台積電 × 電子期 × 台指期 ｜ 月績效差異策略 v2</div>
+        <div class="subtitle">台積電(2330) × 電子期 × 台指期 ｜ 月績效差異策略</div>
       </div>
     </div>
     <div class="hdr-right">
-      <div class="status-dot"></div>
-      <span id="dataStatus" class="badge green">內建數據 2022/11–2024/02</span>
-      <span id="tradingDays" class="badge">300 交易日</span>
+      <div class="status-dot" id="statusDot"></div>
+      <span id="dataRange" class="badge green">連線中...</span>
+      <span id="rowCount"  class="badge">— 交易日</span>
+      <span id="fetchTime" class="badge yellow" style="display:none"></span>
     </div>
   </header>
 
-  <!-- UPLOAD PANEL -->
-  <div class="upload-panel">
-    <div class="upload-modes">
-      <button class="mode-btn active" onclick="setMode('single')">📄 合併檔案（單檔含三欄）</button>
-      <button class="mode-btn" onclick="setMode('multi')">📁 分開上傳（三個檔案）</button>
-    </div>
+  <div class="err-bar" id="errBar"></div>
 
-    <!-- Single mode -->
-    <div id="modeSingle">
-      <div class="upload-single">
-        <div class="file-drop" id="dropSingle">
-          <input type="file" id="fileSingle" accept=".xlsx,.xls,.csv" onchange="onFileSingle(this)">
-          <div class="file-drop-label">合併數據檔 (.xlsx / .csv)</div>
-          <div class="file-drop-name" id="nameSingle">點擊或拖曳上傳</div>
-          <div class="file-drop-hint">格式：日期｜台指｜電子｜台積電</div>
-        </div>
-        <div class="params-inline">
-          <div class="param-group">
-            <label>回望天數</label>
-            <input type="number" id="lb1" value="21" min="5" max="60">
-          </div>
-          <div class="param-group">
-            <label>電子期口</label>
-            <input type="number" id="el1" value="1" min="1" max="20">
-          </div>
-          <div class="param-group">
-            <label>小台口數</label>
-            <input type="number" id="tx1" value="1" min="1" max="20">
-          </div>
-        </div>
-        <button class="run-btn" id="runBtn1" onclick="runFromSingle()">▶ 執行回測</button>
-      </div>
-      <div class="col-map" id="colMapSingle" style="display:none">
-        <div class="col-map-title">欄位對應設定</div>
-        <div>
-          <label>日期欄</label>
-          <select id="colDate"></select>
-        </div>
-        <div>
-          <label>台指欄</label>
-          <select id="colTX"></select>
-        </div>
-        <div>
-          <label>電子期欄</label>
-          <select id="colElec"></select>
-        </div>
-        <div>
-          <label>台積電欄</label>
-          <select id="colTSMC"></select>
-        </div>
-      </div>
+  <!-- CONTROL BAR -->
+  <div class="ctrl-bar">
+    <div class="ctrl-group">
+      <label>回望天數 N</label>
+      <input type="number" id="pLb" value="21" min="5" max="60">
     </div>
-
-    <!-- Multi mode -->
-    <div id="modeMulti" style="display:none">
-      <div class="upload-multi">
-        <div class="file-drop" id="dropTX">
-          <input type="file" id="fileTX" accept=".xlsx,.xls,.csv" onchange="onFileMulti('TX',this)">
-          <div class="file-drop-label">台指期 (.xlsx / .csv)</div>
-          <div class="file-drop-name" id="nameTX">點擊或拖曳上傳</div>
-          <div class="file-drop-hint">需含「日期」與「收盤」欄</div>
-        </div>
-        <div class="file-drop" id="dropElec">
-          <input type="file" id="fileElec" accept=".xlsx,.xls,.csv" onchange="onFileMulti('Elec',this)">
-          <div class="file-drop-label">電子期 (.xlsx / .csv)</div>
-          <div class="file-drop-name" id="nameElec">點擊或拖曳上傳</div>
-          <div class="file-drop-hint">需含「日期」與「收盤」欄</div>
-        </div>
-        <div class="file-drop" id="dropTSMC">
-          <input type="file" id="fileTSMC" accept=".xlsx,.xls,.csv" onchange="onFileMulti('TSMC',this)">
-          <div class="file-drop-label">台積電 (.xlsx / .csv)</div>
-          <div class="file-drop-name" id="nameTSMC">點擊或拖曳上傳</div>
-          <div class="file-drop-hint">需含「日期」與「收盤」欄</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
-          <div class="params-inline">
-            <div class="param-group">
-              <label>回望天數</label>
-              <input type="number" id="lb2" value="21" min="5" max="60">
-            </div>
-            <div class="param-group">
-              <label>電子期口</label>
-              <input type="number" id="el2" value="1" min="1" max="20">
-            </div>
-            <div class="param-group">
-              <label>小台口數</label>
-              <input type="number" id="tx2" value="1" min="1" max="20">
-            </div>
-          </div>
-          <button class="run-btn" id="runBtn2" onclick="runFromMulti()">▶ 執行回測</button>
-        </div>
-      </div>
+    <div class="ctrl-sep"></div>
+    <div class="ctrl-group">
+      <label>電子期口數</label>
+      <input type="number" id="pEl" value="1" min="1" max="20">
     </div>
+    <div class="ctrl-sep"></div>
+    <div class="ctrl-group">
+      <label>小台口數</label>
+      <input type="number" id="pTx" value="1" min="1" max="20">
+    </div>
+    <div class="ctrl-sep"></div>
+    <button class="run-btn" onclick="recompute()">▶ 重新計算</button>
+    <button class="icon-btn" id="reloadBtn" onclick="reloadData()">↺ 重新讀取</button>
 
-    <div id="msgBar" class="msg-bar"></div>
   </div>
 
   <!-- SIGNAL RULES -->
@@ -272,58 +168,30 @@ tbody td { padding:7px 10px; white-space:nowrap; }
     <div class="signal-rule">
       <h4>📈 進場訊號（做多配對）</h4>
       <p style="font-family:'Share Tech Mono',monospace;font-size:12px">買進電子期 / 賣出台指期（小台）</p>
-      <div class="formula">條件：台積電月績效 &gt; 台指期月績效<br>Perf_TSMC(t, t-N) &gt; Perf_TX(t, t-N)<br>乘數：電子期 ×4,000 ｜ 小台 ×50</div>
+      <div class="formula">條件：台積電月績效 &gt; 台指期月績效<br>Perf_TSMC(t,t-N) &gt; Perf_TX(t,t-N)<br>成交：<span style="color:var(--green)">訊號日當日收盤價</span>進場<br>乘數：電子期 ×4,000 ｜ 小台 ×50</div>
     </div>
     <div class="signal-rule">
       <h4>📉 出場訊號（平倉）</h4>
       <p style="font-family:'Share Tech Mono',monospace;font-size:12px">賣出電子期 / 回補台指期（小台）</p>
-      <div class="formula">條件：台積電月績效 ≤ 台指期月績效<br>Perf_TSMC(t, t-N) ≤ Perf_TX(t, t-N)<br>N = 回望天數（預設 21 交易日）</div>
+      <div class="formula">條件：台積電月績效 ≤ 台指期月績效<br>Perf_TSMC(t,t-N) ≤ Perf_TX(t,t-N)<br>成交：<span style="color:var(--red)">訊號日當日收盤價</span>出場<br>N = 回望天數（預設 21 交易日）</div>
     </div>
   </div>
 
   <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi pos">
-      <div class="kpi-label">已實現損益</div>
-      <div class="kpi-value pos" id="kRealized">—</div>
-      <div class="kpi-sub" id="kRealizedSub">萬元</div>
-    </div>
-    <div class="kpi warn">
-      <div class="kpi-label">未實現損益</div>
-      <div class="kpi-value warn" id="kUnreal">—</div>
-      <div class="kpi-sub" id="kUnrealSub">萬元</div>
-    </div>
-    <div class="kpi pos">
-      <div class="kpi-label">勝率</div>
-      <div class="kpi-value pos" id="kWR">—</div>
-      <div class="kpi-sub" id="kWRSub">—</div>
-    </div>
-    <div class="kpi neu">
-      <div class="kpi-label">總交易筆數</div>
-      <div class="kpi-value neu" id="kTrades">—</div>
-      <div class="kpi-sub" id="kTradesSub">含未平倉</div>
-    </div>
-    <div class="kpi neg">
-      <div class="kpi-label">最大回撤</div>
-      <div class="kpi-value neg" id="kDD">—</div>
-      <div class="kpi-sub">萬元</div>
-    </div>
-    <div class="kpi pos">
-      <div class="kpi-label">平均持倉</div>
-      <div class="kpi-value pos" id="kHold">—</div>
-      <div class="kpi-sub">天/筆</div>
-    </div>
-    <div class="kpi neu">
-      <div class="kpi-label">平均盈虧比</div>
-      <div class="kpi-value neu" id="kRR">—</div>
-      <div class="kpi-sub">獲利/虧損</div>
-    </div>
+    <div class="kpi pos"><div class="kpi-label">已實現損益</div><div class="kpi-value pos" id="kR">—</div><div class="kpi-sub" id="kRS">萬元</div></div>
+    <div class="kpi warn"><div class="kpi-label">未實現損益</div><div class="kpi-value warn" id="kU">—</div><div class="kpi-sub" id="kUS">萬元</div></div>
+    <div class="kpi pos"><div class="kpi-label">勝率</div><div class="kpi-value pos" id="kW">—</div><div class="kpi-sub" id="kWS">—</div></div>
+    <div class="kpi neu"><div class="kpi-label">總交易筆數</div><div class="kpi-value neu" id="kT">—</div><div class="kpi-sub" id="kTS">—</div></div>
+    <div class="kpi neg"><div class="kpi-label">最大回撤</div><div class="kpi-value neg" id="kD">—</div><div class="kpi-sub">萬元</div></div>
+    <div class="kpi pos"><div class="kpi-label">平均持倉</div><div class="kpi-value pos" id="kH">—</div><div class="kpi-sub">天/筆</div></div>
+    <div class="kpi neu"><div class="kpi-label">盈虧比</div><div class="kpi-value neu" id="kRR">—</div><div class="kpi-sub" id="kRRS">—</div></div>
   </div>
 
   <!-- CHARTS TOP -->
   <div class="charts-top">
     <div class="chart-panel">
-      <h3>累積損益曲線（已實現） <em id="pnlLatest">— 萬</em></h3>
+      <h3>累積損益曲線（已實現） <em id="pnlLatest">—</em></h3>
       <div class="chart-wrap"><canvas id="pnlChart"></canvas></div>
     </div>
     <div class="chart-panel">
@@ -335,381 +203,272 @@ tbody td { padding:7px 10px; white-space:nowrap; }
   <!-- CHARTS BOT -->
   <div class="charts-bot">
     <div class="chart-panel">
-      <h3>台積電 vs 台指期 21日滾動月績效</h3>
+      <h3>台積電 vs 台指期 滾動月績效</h3>
       <div class="chart-wrap"><canvas id="perfChart"></canvas></div>
     </div>
     <div class="table-panel">
-      <h3 id="tradeTableTitle">交易明細</h3>
+      <h3>交易明細 <em id="tradeSubtitle"></em></h3>
       <div class="table-scroll">
         <table>
-          <thead>
-            <tr>
-              <th>#</th><th>進場日</th><th>出場日</th><th>持倉</th>
-              <th>電子期PnL</th><th>台指PnL</th><th>淨損益(萬)</th><th>狀態</th>
-            </tr>
-          </thead>
-          <tbody id="tradeTableBody"></tbody>
+          <thead><tr><th>#</th><th>進場日</th><th>出場日</th><th>持倉</th><th>電子PnL</th><th>台指PnL</th><th>淨損益(萬)</th><th>狀態</th></tr></thead>
+          <tbody id="tradeTbody"></tbody>
         </table>
       </div>
     </div>
   </div>
 
   <div class="disclaimer">
-    ⚠ 電子期乘數4,000點/格；台指小台乘數50點/格（大台×200）。月績效 = (當日收盤÷N日前收盤−1)×100%。未含完整滑價與交易稅。結果不代表未來績效，期貨交易具槓桿風險，請審慎評估。
+    ⚠ 電子期乘數4,000點/格；台指小台乘數50點/格。月績效=(當日收盤÷N日前收盤−1)×100%。進出場成交價：訊號確認日當日收盤價（收盤後訊號確認，同收盤價成交）。資料透過 Google Apps Script 讀取後台資料庫，未含完整滑價與交易稅。結果不代表未來績效，期貨交易具槓桿風險。
   </div>
 </div>
 
 <script>
 // ══════════════════════════════════════════════════════
-// BUILT-IN DATA (2022/11/15 – 2024/02/16)
+//  CONFIG — 硬編碼 Apps Script URL，開頁自動讀取
 // ══════════════════════════════════════════════════════
-const BUILTIN = [
-  [20221115,14527,677.5,478.5],[20221116,14499,679.8,483.5],[20221117,14513,680.8,486.5],[20221118,14462,680.2,487],[20221121,14425,676.1,482.5],[20221122,14425,676.5,481],[20221123,14524,681.9,487],[20221124,14547,684,489],[20221125,14575,686.1,490],[20221128,14573,686.9,491.5],[20221129,14635,691.5,497],[20221130,14767,700.9,506],[20221201,14835,703.8,511],[20221202,14862,707.1,513],[20221205,14855,707.4,516],[20221206,14739,700.1,510],[20221207,14648,693.2,503],[20221208,14616,690,501],[20221209,14563,686,498],[20221212,14471,680,492],[20221213,14530,683.5,495],[20221214,14711,693.9,500.5],[20221215,14647,688.5,498],[20221216,14481,676.5,487],[20221219,14378,668.7,480],[20221220,14220,659.1,472],[20221221,14220,659.1,472],[20221222,14281,663.5,477],[20221223,14049,647.1,462],[20221226,13999,643.9,459],[20221227,14124,652.1,466],[20221228,13996,642.2,459],[20221229,13845,631.5,449],[20221230,13816,629.1,446],[20230103,13879,634.1,451],[20230104,13803,627.7,445],[20230105,13986,641.3,456],[20230106,14071,648.3,462],[20230109,14768,680.45,478.5],[20230110,14807,683.8,481],[20230111,14789,684.05,483.5],[20230112,14933,691.7,492],[20230113,15002,695.6,497],[20230116,15191,706.5,503],[20230117,15322,716.6,511],[20230130,15611,736.6,530],[20230131,15802,748.45,546],[20230201,15953,757.3,556],[20230202,16083,766.4,562],[20230203,16330,782,575],[20230206,16291,779.4,572],[20230207,16280,779,573],[20230208,16565,797,584],[20230209,16729,808.3,592],[20230210,16713,808.2,590],[20230213,16553,797.3,582],[20230214,16696,806.4,589],[20230215,16628,800.7,584],[20230216,16700,806.7,590],[20230217,16490,791.8,579],[20230220,16568,798.5,582],[20230221,16643,805.7,586],[20230222,15374,715.55,500],[20230223,15474,722.4,506],[20230224,15289,709.8,496],[20230301,15422,718.4,503],[20230302,14947,684.5,475],[20230303,15078,693.4,482],[20230306,15108,695.1,484],[20230307,15000,686.8,477],[20230308,14893,679.4,470],[20230309,15027,688.4,477],[20230310,14901,679.3,470],[20230313,14640,660.4,454],[20230314,14558,653.4,449],[20230315,14450,645.4,443],[20230316,14415,641.8,441],[20230317,14490,647.4,447],[20230320,14561,651.8,452],[20230321,14514,648.2,449],[20230322,15715,749.0,516],[20230323,15829,756.5,521],[20230324,15985,765.9,529],[20230327,16029,769.5,531],[20230328,15798,753.3,518],[20230329,15968,764.8,527],[20230330,16030,769.2,531],[20230331,16156,777.1,537],[20230406,16102,773.8,533],[20230407,16001,766.7,527],[20230410,15903,758.9,520],[20230411,15924,752.3,520],[20230412,15775,742.1,511],[20230413,15988,757.1,523],[20230414,16100,765.3,530],[20230417,16301,777.6,539],[20230418,16249,773.4,536],[20230419,16285,776.6,538],[20230420,16185,769.4,530],[20230421,16120,764.0,525],[20230424,16000,755.6,518],[20230425,15667,730.2,498],[20230426,15467,714.2,486],[20230427,15482,716,488],[20230428,15618,725.5,495],[20230502,15482,715.4,487],[20230503,15237,697.4,474],[20230504,15190,694.2,472],[20230505,15169,692.3,470],[20230508,15386,706.7,479],[20230509,15432,710.4,482],[20230510,15235,696.8,471],[20230511,15144,689.5,465],[20230512,15103,686.7,462],[20230515,15256,698.5,472],[20230516,15307,701.9,475],[20230517,15591,720.9,490],[20230518,16070,750.5,496],[20230519,16242,762.6,505],[20230522,16392,773.0,513],[20230523,16531,782.8,521],[20230524,16486,778.9,518],[20230525,16887,807.7,541],[20230526,17079,822.9,553],[20230529,17146,827.3,557],[20230530,17022,817.5,549],[20230531,16964,813.0,545],[20230601,17017,817.3,548],[20230602,17198,829.4,557],[20230605,17218,831.4,558],[20230606,17223,831.8,558],[20230607,17245,833.3,559],[20230608,17254,833.9,560],[20230609,17470,847.5,573],[20230612,17521,851.0,577],[20230613,17811,873.1,594],[20230614,17742,867.4,590],[20230615,17528,851.8,578],[20230616,17438,845.1,572],[20230619,17368,839.3,567],[20230620,17458,845.4,572],[20230621,17476,846.7,573],[20230626,17135,820.0,550],[20230627,16883,801.0,534],[20230628,16773,807.5,506],[20230629,16820,810.9,508],[20230630,16790,811.15,510],[20230703,17019,826.6,522],[20230704,17235,840.7,534],[20230705,17030,825.2,521],[20230706,17011,824.0,521],[20230707,16929,818.0,517],[20230710,16752,806.0,507],[20230711,17022,824.5,519],[20230712,16997,822.3,517],[20230713,17092,829.2,523],[20230714,17290,849.65,535],[20230717,17343,853.7,538],[20230718,17229,845.2,530],[20230719,17138,838.3,524],[20230720,17130,841.95,528],[20230721,16948,830.65,518],[20230724,16923,828.7,517],[20230725,17218,849.7,533],[20230726,17288,854.3,538],[20230727,17356,859.5,543],[20230728,17340,858.5,543],[20230731,17155,845.2,532],[20230801,17061,837.7,526],[20230802,16819,820.0,511],[20230804,16680,809.3,503],[20230807,17007,833.1,524],[20230808,17062,837.2,527],[20230809,17077,838.0,527],[20230810,16812,817.5,511],[20230811,16694,808.3,504],[20230814,16345,782.8,480],[20230815,16234,774.3,474],[20230816,16175,769.5,470],[20230817,16281,777.0,477],[20230818,16199,770.5,472],[20230821,16011,756.8,462],[20230822,16399,806.9,478],[20230823,16548,817.0,485],[20230824,16613,822.1,489],[20230825,16386,806.5,479],[20230828,16313,800.7,476],[20230829,16383,805.6,479],[20230830,16449,810.4,483],[20230831,16347,803.1,477],[20230901,16650,816.25,487],[20230904,16779,824.5,493],[20230905,16641,813.9,485],[20230906,16650,814.5,485],[20230907,16562,814.95,480],[20230908,16461,807.5,474],[20230911,16344,798.7,468],[20230912,16525,811.7,477],[20230913,16610,817.8,482],[20230914,16847,834.5,495],[20230915,16849,834.6,495],[20230918,16695,822.6,485],[20230919,16763,828.0,489],[20230920,16617,817.0,481],[20230921,16369,799.0,468],[20230922,16166,784.5,456],[20230925,16393,800.8,469],[20230926,16204,787.0,460],[20230927,16073,777.5,453],[20230928,15994,771.3,448],[20231002,16130,781.2,456],[20231003,16008,772.2,449],[20231004,15752,752.5,435],[20231005,15856,760.6,441],[20231006,15947,767.1,447],[20231011,16244,788.5,462],[20231012,16451,804.7,473],[20231013,16770,828.15,487],[20231016,16647,818.2,479],[20231017,16653,821.25,482],[20231018,16243,791.4,460],[20231019,16185,786.6,456],[20231020,16382,803.1,469],[20231023,16180,786.4,458],[20231024,16220,789.5,461],[20231025,16320,796.5,467],[20231026,16127,780.3,454],[20231027,16027,772.2,448],[20231030,16190,784.7,458],[20231031,16050,774.0,450],[20231101,16038,773.2,449],[20231102,16202,785.2,458],[20231103,16437,802.1,471],[20231106,16773,830.2,491],[20231107,16657,820.3,484],[20231108,16607,815.9,481],[20231109,16486,806.3,474],[20231110,16430,802.0,471],[20231113,16600,815.6,480],[20231114,16804,830.6,491],[20231115,16875,836.5,496],[20231116,17145,858.1,512],[20231117,17121,856.3,510],[20231120,17198,850.05,514],[20231121,17412,862.0,521],[20231122,17286,854.0,515],[20231123,17305,854.15,516],[20231124,17519,869.8,528],[20231127,17421,862.4,522],[20231128,17575,874.9,531],[20231129,17634,879.7,535],[20231130,17664,882.1,537],[20231201,17471,868.0,526],[20231204,17418,858.15,522],[20231205,17352,852.5,518],[20231206,17586,869.5,530],[20231207,17481,861.3,524],[20231208,17618,871.4,531],[20231211,17791,885.0,540],[20231212,17736,880.3,537],[20231213,17766,882.4,539],[20231214,17825,887.3,543],[20231215,17737,880.2,537],[20231218,17820,887.2,542],[20231219,17895,893.5,547],[20231220,17681,876.9,534],[20231221,17698,878.2,535],[20231222,17774,884.5,540],[20231225,17948,897.5,550],[20231226,18070,907.5,557],[20231227,17857,891.2,546],[20231228,17921,896.2,550],[20231229,17930,896.9,551],[20240102,17798,884.1,540],[20240103,17543,869.4,531],[20240104,17743,883.8,542],[20240105,17680,878.8,538],[20240108,17975,900.8,553],[20240109,17886,893.6,547],[20240110,17780,884.7,540],[20240111,17833,889.0,543],[20240112,17833,889.0,543],[20240115,17723,880.5,536],[20240116,17356,852.7,515],[20240117,17176,837.6,504],[20240118,17427,857.3,519],[20240119,17930,900.0,543],[20240122,18217,922.5,562],[20240123,18198,920.9,561],[20240124,18141,916.3,558],[20240125,18253,926.0,564],[20240126,18205,921.5,562],[20240129,18313,930.5,568],[20240130,18232,923.6,563],[20240131,18104,913.1,556],[20240201,18347,932.7,569],[20240202,18459,942.4,576],[20240205,18086,923.4,647],[20240215,18667,968.35,698],[20240216,18635,961.95,684]
-];
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1m8eOgereXIO8CXzDKWV39MthioeaDKwURhCCLnGRbkj-KWZZUrHYyf4P9eqNQ24k/exec';
+const E_MULT  = 4000;
+const TX_MULT = 50;
+
+let _rawData = null;
+let _charts  = {};
 
 // ══════════════════════════════════════════════════════
-// STATE
+//  FETCH via Apps Script
 // ══════════════════════════════════════════════════════
-let currentMode = 'single';
-let parsedSingle = null;
-let parsedMulti = { TX: null, Elec: null, TSMC: null };
-let singleHeaders = [];
-let chartInstances = {};
-
-// ══════════════════════════════════════════════════════
-// MODE TOGGLE
-// ══════════════════════════════════════════════════════
-function setMode(m) {
-  currentMode = m;
-  document.querySelectorAll('.mode-btn').forEach((b,i)=>b.classList.toggle('active', (m==='single'&&i===0)||(m==='multi'&&i===1)));
-  document.getElementById('modeSingle').style.display = m==='single'?'':'none';
-  document.getElementById('modeMulti').style.display  = m==='multi' ?'':'none';
+async function fetchFromAppsScript(url) {
+  // Apps Script Web App 支援 CORS，直接 fetch
+  const resp = await fetch(url, { redirect: 'follow' });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}：${resp.statusText}`);
+  const json = await resp.json();
+  if (json.status !== 'ok') throw new Error(json.message || '未知錯誤');
+  return json.data; // [[dateStr, tx, elec, tsmc], ...]
 }
 
 // ══════════════════════════════════════════════════════
-// FILE PARSING
+//  LOAD FLOW
 // ══════════════════════════════════════════════════════
-function readFile(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    const isCsv = file.name.toLowerCase().endsWith('.csv');
-    reader.onload = e => {
-      try {
-        let wb;
-        if (isCsv) {
-          wb = XLSX.read(e.target.result, { type: 'string' });
-        } else {
-          wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-        }
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        res(raw);
-      } catch(err) { rej(err); }
-    };
-    reader.onerror = rej;
-    if (isCsv) reader.readAsText(file, 'utf-8');
-    else reader.readAsArrayBuffer(file);
-  });
+function setLoad(pct, msg) {
+  document.getElementById('loadBar').style.width = pct + '%';
+  document.getElementById('loadMsg').textContent = msg;
 }
 
-function guessCol(headers, keywords) {
-  for (const kw of keywords) {
-    const idx = headers.findIndex(h => String(h).toLowerCase().includes(kw.toLowerCase()));
-    if (idx >= 0) return idx;
-  }
-  return 0;
-}
+async function doLoad(url) {
+  const screen = document.getElementById('loadScreen');
+  screen.classList.remove('hidden');
+  screen.style.display = 'flex';
+  document.getElementById('statusDot').className = 'status-dot loading';
+  setLoad(10, '連線 Apps Script...');
+  hideErr();
 
-function parseDate(v) {
-  if (!v && v !== 0) return null;
-  const s = String(v).trim().replace(/\//g,'-').replace(/\./g,'-');
-  // YYYYMMDD integer
-  if (/^\d{8}$/.test(s)) return s;
-  // Excel serial
-  if (/^\d{4,6}$/.test(s) && !s.includes('-')) {
-    const d = XLSX.SSF.parse_date_code(+s);
-    if (d) return `${d.y}${String(d.m).padStart(2,'0')}${String(d.d).padStart(2,'0')}`;
-  }
-  // YYYY-MM-DD
-  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return `${m[1]}${m[2].padStart(2,'0')}${m[3].padStart(2,'0')}`;
-  return null;
-}
-
-// ── Single file ──
-async function onFileSingle(input) {
-  const file = input.files[0];
-  if (!file) return;
-  setMsg('info', `讀取 ${file.name} ...`);
   try {
-    const raw = await readFile(file);
-    if (raw.length < 3) { setMsg('error','檔案內容不足，請確認格式'); return; }
-    parsedSingle = raw;
-    singleHeaders = raw[0].map(String);
-    document.getElementById('nameSingle').textContent = file.name;
-    document.getElementById('dropSingle').classList.add('has-file');
-    // populate col map
-    buildColMap(singleHeaders);
-    document.getElementById('colMapSingle').style.display = 'grid';
-    setMsg('ok', `✓ 載入成功：${raw.length-1} 列資料，請確認欄位對應後執行回測`);
-  } catch(e) { setMsg('error', '解析失敗：' + e.message); }
-}
+    setLoad(30, '讀取 Google Sheet 資料...');
+    const data = await fetchFromAppsScript(url);
+    setLoad(70, `解析資料中 (${data.length} 列)...`);
 
-function buildColMap(headers) {
-  const selDate = document.getElementById('colDate');
-  const selTX   = document.getElementById('colTX');
-  const selElec = document.getElementById('colElec');
-  const selTSMC = document.getElementById('colTSMC');
-  [selDate,selTX,selElec,selTSMC].forEach(s => { s.innerHTML=''; headers.forEach((h,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=h||`欄${i+1}`; s.appendChild(o); }); });
-  selDate.value = guessCol(headers, ['日期','date','Date','日　期','日 期']);
-  selTX.value   = guessCol(headers, ['台指','TX','tx','加權','指數']);
-  selElec.value = guessCol(headers, ['電子','elec','Elec','電子期']);
-  selTSMC.value = guessCol(headers, ['台積電','tsmc','TSMC','2330','收盤','close']);
-}
+    if (!Array.isArray(data) || data.length < 25)
+      throw new Error(`有效資料列僅 ${data?.length ?? 0} 列，請確認試算表格式`);
 
-function runFromSingle() {
-  if (!parsedSingle) { setMsg('error','請先上傳檔案，或直接使用內建數據回測'); runBacktest(BUILTIN, +document.getElementById('lb1').value, +document.getElementById('el1').value, +document.getElementById('tx1').value, '內建數據'); return; }
-  const dI = +document.getElementById('colDate').value;
-  const tI = +document.getElementById('colTX').value;
-  const eI = +document.getElementById('colElec').value;
-  const sI = +document.getElementById('colTSMC').value;
-  const lb = +document.getElementById('lb1').value;
-  const el = +document.getElementById('el1').value;
-  const tx = +document.getElementById('tx1').value;
-  const rows = parsedSingle.slice(1).map(r => {
-    const date = parseDate(r[dI]);
-    const txv  = parseFloat(r[tI]);
-    const ev   = parseFloat(r[eI]);
-    const sv   = parseFloat(r[sI]);
-    return [date, txv, ev, sv];
-  }).filter(r => r[0] && !isNaN(r[1]) && !isNaN(r[2]) && !isNaN(r[3]));
-  if (rows.length < lb+2) { setMsg('error',`有效數據僅 ${rows.length} 列，需 > ${lb+2} 列`); return; }
-  setMsg('ok', `✓ 數據解析完成：${rows.length} 交易日`);
-  runBacktest(rows, lb, el, tx, parsedSingle._fname || '上傳檔案');
-}
+    _rawData = data;
+    setLoad(100, `✓ 載入完成：${data.length} 交易日`);
 
-// ── Multi files ──
-async function onFileMulti(key, input) {
-  const file = input.files[0];
-  if (!file) return;
-  setMsg('info', `讀取 ${file.name} ...`);
-  try {
-    const raw = await readFile(file);
-    parsedMulti[key] = raw;
-    document.getElementById('name'+key).textContent = file.name;
-    document.getElementById('drop'+key).classList.add('has-file');
-    const done = Object.values(parsedMulti).filter(Boolean).length;
-    setMsg('ok', `✓ ${file.name} 載入成功（${done}/3 檔案已就緒）`);
-  } catch(e) { setMsg('error', '解析失敗：' + e.message); }
-}
+    setTimeout(() => {
+      screen.classList.add('hidden');
+      setTimeout(() => { screen.style.display='none'; }, 500);
+    }, 350);
 
-function runFromMulti() {
-  if (!parsedMulti.TX || !parsedMulti.Elec || !parsedMulti.TSMC) {
-    setMsg('error','請上傳全部三個檔案（台指期、電子期、台積電）'); return;
+    document.getElementById('statusDot').className = 'status-dot';
+    updateFetchBadge(data.length);
+    runBacktest(data, +document.getElementById('pLb').value||21,
+                      +document.getElementById('pEl').value||1,
+                      +document.getElementById('pTx').value||1);
+  } catch(e) {
+    setLoad(0,'');
+    screen.classList.add('hidden');
+    setTimeout(()=>{ screen.style.display='none'; }, 500);
+    document.getElementById('statusDot').className = 'status-dot red';
+    document.getElementById('dataRange').textContent = '讀取失敗';
+    document.getElementById('dataRange').className   = 'badge red';
+    showErr(e.message);
   }
-  const lb = +document.getElementById('lb2').value;
-  const el = +document.getElementById('el2').value;
-  const tx = +document.getElementById('tx2').value;
-  // Parse each: find date col + close col
-  function parseSheet(raw) {
-    const hdrs = raw[0].map(String);
-    const dI = guessCol(hdrs, ['日期','date','Date','日　期']);
-    const cI = guessCol(hdrs, ['收盤','close','Close','價格','price','指數','加權','value']);
-    return raw.slice(1).map(r => ({ date: parseDate(r[dI]), val: parseFloat(r[cI]) }))
-              .filter(r => r.date && !isNaN(r.val));
-  }
-  const txData  = parseSheet(parsedMulti.TX);
-  const eData   = parseSheet(parsedMulti.Elec);
-  const sData   = parseSheet(parsedMulti.TSMC);
-  // Merge on date
-  const txMap = {}; txData.forEach(r=>txMap[r.date]=r.val);
-  const eMap  = {}; eData.forEach(r=>eMap[r.date]=r.val);
-  const sMap  = {}; sData.forEach(r=>sMap[r.date]=r.val);
-  const allDates = [...new Set([...Object.keys(txMap),...Object.keys(eMap),...Object.keys(sMap)])].sort();
-  const rows = allDates.filter(d=>txMap[d]&&eMap[d]&&sMap[d]).map(d=>[d,txMap[d],eMap[d],sMap[d]]);
-  if (rows.length < lb+2) { setMsg('error',`合併後有效數據僅 ${rows.length} 列，需 > ${lb+2} 列`); return; }
-  setMsg('ok', `✓ 三檔合併完成：${rows.length} 交易日`);
-  runBacktest(rows, lb, el, tx, '分開上傳');
+}
+
+function updateFetchBadge(count) {
+  const ft = document.getElementById('fetchTime');
+  ft.textContent = '更新：' + new Date().toLocaleTimeString('zh-TW',{hour12:false});
+  ft.style.display = '';
+  document.getElementById('rowCount').textContent = count + ' 交易日';
+}
+
+async function reloadData() {
+  const btn = document.getElementById('reloadBtn');
+  btn.innerHTML = '<span class="spin"></span>讀取中...';
+  btn.disabled  = true;
+  _rawData = null;
+  try { await doLoad(APPS_SCRIPT_URL); }
+  finally { btn.innerHTML='↺ 重新讀取'; btn.disabled=false; }
+}
+
+function recompute() {
+  if (!_rawData) { showErr('尚未載入資料，請點「↺ 重新讀取」'); return; }
+  runBacktest(_rawData,
+    +document.getElementById('pLb').value||21,
+    +document.getElementById('pEl').value||1,
+    +document.getElementById('pTx').value||1);
 }
 
 // ══════════════════════════════════════════════════════
-// BACKTEST ENGINE
+//  BACKTEST ENGINE
+//  成交規則：訊號確認日「當日收盤」進出場
+//  進場：當日 diff>0 且前一日未持倉 → 當日收盤買進
+//  出場：當日 diff≤0 且前一日持倉中 → 當日收盤平倉
 // ══════════════════════════════════════════════════════
-function runBacktest(data, lookback, eLots, txLots, source) {
-  const E_MULT = 4000;
-  const TX_MULT = 50;
+function runBacktest(data, lookback, eLots, txLots) {
   const n = data.length;
+  const daily=[], trades=[];
+  let inTrade=false, entryIdx=null, cumPnl=0;
 
-  const daily = [];
-  const trades = [];
-  let inTrade = false, entryIdx = null, cumPnl = 0;
+  for (let i=0; i<n; i++) {
+    const date=data[i][0], txv=+data[i][1], elec=+data[i][2], tsmc=+data[i][3];
+    if (i<lookback){ daily.push({date,pnl:0,diff:0,tp:0,xp:0}); continue; }
 
-  for (let i = 0; i < n; i++) {
-    const [date, tx, elec, tsmc] = data[i].map((v,j)=>j===0?v:parseFloat(v));
-    if (i < lookback) { daily.push({ date, pnl:0, diff:0, tperf:0, xperf:0, inTrade:false }); continue; }
-    const tperf = (tsmc / data[i-lookback][3] - 1) * 100;
-    const xperf = (tx   / data[i-lookback][1] - 1) * 100;
-    const diff  = tperf - xperf;
-    const sig   = diff > 0;
+    const tp   = (tsmc / +data[i-lookback][3] - 1)*100;
+    const xp   = (txv  / +data[i-lookback][1] - 1)*100;
+    const diff = tp - xp;
+    const sig  = diff > 0;
 
-    if (!inTrade && sig) { inTrade = true; entryIdx = i; }
-    else if (inTrade && !sig) {
-      const days = i - entryIdx;
-      const ep  = (elec - data[entryIdx][2]) * E_MULT / 10000 * eLots;
-      const tp  = -(tx  - data[entryIdx][1]) * TX_MULT / 10000 * txLots;
-      const net = ep + tp;
+    // ── 出場優先：持倉中且今日訊號反轉 → 當日收盤出場 ──
+    if (inTrade && !sig) {
+      const days = i - entryIdx + 1;          // 含進場日與出場日
+      const ep  = (elec - +data[entryIdx][2]) * E_MULT  / 10000 * eLots;
+      const xp2 = -(txv - +data[entryIdx][1]) * TX_MULT / 10000 * txLots;
+      const net = ep + xp2;
       cumPnl += net;
-      trades.push({ entry:data[entryIdx][0], exit:date, days, ep:+ep.toFixed(2), tp:+tp.toFixed(2), net:+net.toFixed(2), cum:+cumPnl.toFixed(2) });
+      trades.push({
+        entry:data[entryIdx][0], exit:date, days,
+        entryElec:+data[entryIdx][2], entryTx:+data[entryIdx][1],
+        exitElec:elec, exitTx:txv,
+        ep:+ep.toFixed(2), xp:+xp2.toFixed(2),
+        net:+net.toFixed(2), cum:+cumPnl.toFixed(2)
+      });
       inTrade = false;
     }
-    daily.push({ date, pnl:+cumPnl.toFixed(2), diff:+diff.toFixed(3), tperf:+tperf.toFixed(3), xperf:+xperf.toFixed(3), inTrade });
+
+    // ── 進場：未持倉且今日訊號成立 → 當日收盤進場 ──
+    if (!inTrade && sig) { inTrade=true; entryIdx=i; }
+
+    daily.push({date, pnl:+cumPnl.toFixed(2), diff:+diff.toFixed(3), tp:+tp.toFixed(3), xp:+xp.toFixed(3)});
   }
 
-  // Open trade
+  // ── 末日仍持倉：以最後一根收盤計算未實現 ──
   if (inTrade) {
-    const last = data[n-1];
-    const ep  = (last[2] - data[entryIdx][2]) * E_MULT / 10000 * eLots;
-    const tp  = -(last[1] - data[entryIdx][1]) * TX_MULT / 10000 * txLots;
-    const net = ep + tp;
-    trades.push({ entry:data[entryIdx][0], exit:null, days:n-1-entryIdx, ep:+ep.toFixed(2), tp:+tp.toFixed(2), net:+net.toFixed(2), cum:+(cumPnl+net).toFixed(2), open:true });
+    const last=data[n-1];
+    const days = n-1 - entryIdx + 1;
+    const ep  = (+last[2] - +data[entryIdx][2]) * E_MULT  / 10000 * eLots;
+    const xp2 = -(+last[1] - +data[entryIdx][1]) * TX_MULT / 10000 * txLots;
+    const net = ep + xp2;
+    trades.push({
+      entry:data[entryIdx][0], exit:null, days,
+      entryElec:+data[entryIdx][2], entryTx:+data[entryIdx][1],
+      exitElec:+last[2], exitTx:+last[1],
+      ep:+ep.toFixed(2), xp:+xp2.toFixed(2),
+      net:+net.toFixed(2), cum:+(cumPnl+net).toFixed(2), open:true
+    });
   }
 
-  // Stats
-  const closed = trades.filter(t=>!t.open);
-  const wins   = closed.filter(t=>t.net>0);
-  const losses = closed.filter(t=>t.net<=0);
-  const wr     = closed.length ? (wins.length/closed.length*100).toFixed(1) : '—';
-  const avgWin = wins.length   ? (wins.reduce((a,t)=>a+t.net,0)/wins.length).toFixed(2)   : 0;
-  const avgLoss= losses.length ? (Math.abs(losses.reduce((a,t)=>a+t.net,0)/losses.length)).toFixed(2) : 0;
-  const rr     = avgLoss > 0   ? (avgWin/avgLoss).toFixed(2) : '—';
-  const avgHold= closed.length ? (closed.reduce((a,t)=>a+t.days,0)/closed.length).toFixed(1) : '—';
-  let peak=0, mdd=0; daily.forEach(d=>{if(d.pnl>peak)peak=d.pnl; const dd=peak-d.pnl; if(dd>mdd)mdd=dd;});
-  const openTrade = trades.find(t=>t.open);
-  const unrealPnl = openTrade ? openTrade.net : 0;
+  const closed=trades.filter(t=>!t.open);
+  const wins  =closed.filter(t=>t.net>0);
+  const losses=closed.filter(t=>t.net<=0);
+  const wr    =closed.length?(wins.length/closed.length*100).toFixed(1):'—';
+  const avgW  =wins.length  ?(wins.reduce((a,t)=>a+t.net,0)/wins.length).toFixed(2):0;
+  const avgL  =losses.length?Math.abs(losses.reduce((a,t)=>a+t.net,0)/losses.length).toFixed(2):0;
+  const rr    =avgL>0?(+avgW/+avgL).toFixed(2):'—';
+  const avgH  =closed.length?(closed.reduce((a,t)=>a+t.days,0)/closed.length).toFixed(1):'—';
+  let peak=0,mdd=0; daily.forEach(d=>{if(d.pnl>peak)peak=d.pnl;const dd=peak-d.pnl;if(dd>mdd)mdd=dd;});
+  const ot    =trades.find(t=>t.open);
+  const unreal=ot?ot.net:0;
 
-  // Update header
-  const fmtDate = d => {
-    const s = String(d);
-    return s.length===8 ? `${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}` : s;
-  };
-  document.getElementById('dataStatus').textContent = `${source} ${fmtDate(data[0][0])} – ${fmtDate(data[n-1][0])}`;
-  document.getElementById('tradingDays').textContent = `${n} 交易日`;
+  const fd=d=>{const s=String(d);return s.length===8?`${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}`:s;};
+  document.getElementById('dataRange').textContent=`${fd(data[0][0])} – ${fd(data[n-1][0])}`;
+  document.getElementById('dataRange').className='badge green';
 
-  // Update KPIs
-  setKPI('kRealized', cumPnl>=0?`+${cumPnl.toFixed(2)}`:`${cumPnl.toFixed(2)}`, cumPnl>=0?'pos':'neg', `${closed.length}筆已平倉`);
-  setKPI('kUnreal', unrealPnl>=0?`+${unrealPnl.toFixed(2)}`:`${unrealPnl.toFixed(2)}`, unrealPnl>=0?'pos':'neg', openTrade?'1筆持倉中':'無未平倉');
-  setKPI('kWR', `${wr}%`, 'pos', `${wins.length}勝/${losses.length}負`);
-  setKPI('kTrades', trades.length, 'neu', `${closed.length}平倉 ${trades.length-closed.length}持倉`);
-  setKPI('kDD', `-${mdd.toFixed(2)}`, 'neg', '峰谷最大回撤');
-  setKPI('kHold', avgHold, 'pos', '天/筆（已平倉）');
-  setKPI('kRR', rr, 'neu', `均獲:${avgWin} 均損:${avgLoss}`);
+  sk('kR', cumPnl>=0?`+${cumPnl.toFixed(2)}`:`${cumPnl.toFixed(2)}`, cumPnl>=0?'pos':'neg', `${closed.length}筆已平倉`);
+  sk('kU', unreal>=0?`+${unreal.toFixed(2)}`:`${unreal.toFixed(2)}`, unreal>=0?'pos':'neg', ot?'持倉中':'無未平倉');
+  sk('kW', `${wr}%`, 'pos', `${wins.length}勝 / ${losses.length}負`);
+  sk('kT', trades.length, 'neu', `${closed.length}平倉 ${trades.length-closed.length}持倉`);
+  sk('kD', `-${mdd.toFixed(2)}`, 'neg', '峰谷最大回撤');
+  sk('kH', avgH, 'pos', '天/筆（已平倉）');
+  sk('kRR', rr, 'neu', `均獲:${avgW} 均損:${avgL}`);
 
-  // Charts
-  const labels = daily.map(d=>{ const s=String(d.date); return s.slice(2,4)+'/'+s.slice(4,6)+'/'+s.slice(6,8); });
+  const labels=daily.map(d=>{const s=String(d.date);return s.slice(2,4)+'/'+s.slice(4,6)+'/'+s.slice(6,8);});
   renderPnL(labels, daily.map(d=>d.pnl));
   renderDiff(labels, daily.map(d=>d.diff));
-  renderPerf(labels, daily.map(d=>d.tperf), daily.map(d=>d.xperf));
-  renderTrades(trades, fmtDate);
+  renderPerf(labels, daily.map(d=>d.tp), daily.map(d=>d.xp));
+  renderTrades(trades, fd);
 
-  document.getElementById('pnlLatest').textContent = cumPnl>=0?`+${cumPnl.toFixed(2)} 萬`:`${cumPnl.toFixed(2)} 萬`;
-  const lastDiff = daily[daily.length-1]?.diff ?? 0;
-  document.getElementById('diffLatest').textContent = (lastDiff>=0?'+':'')+lastDiff.toFixed(2)+'%';
-  document.getElementById('tradeTableTitle').textContent = `交易明細（共${trades.length}筆）`;
+  const ld=daily[daily.length-1]?.diff??0;
+  document.getElementById('pnlLatest').textContent=cumPnl>=0?`+${cumPnl.toFixed(2)} 萬`:`${cumPnl.toFixed(2)} 萬`;
+  document.getElementById('diffLatest').textContent=(ld>=0?'+':'')+ld.toFixed(2)+'%';
+  document.getElementById('tradeSubtitle').textContent=`共${trades.length}筆 | 回望${lookback}日 電子${eLots}口 小台${txLots}口`;
 }
 
-function setKPI(id, val, cls, sub) {
-  const el = document.getElementById(id);
-  el.textContent = val;
-  el.className = 'kpi-value ' + cls;
-  const subEl = document.getElementById(id+'Sub');
-  if (subEl) subEl.textContent = sub;
+function sk(id,val,cls,sub){
+  const el=document.getElementById(id);el.textContent=val;el.className='kpi-value '+cls;
+  const se=document.getElementById(id+'S');if(se)se.textContent=sub;
 }
 
 // ══════════════════════════════════════════════════════
-// CHART RENDERERS
+//  CHARTS
 // ══════════════════════════════════════════════════════
-const BASE = {
-  responsive:true, maintainAspectRatio:false, animation:{duration:600},
-  plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1520',borderColor:'#1a2d45',borderWidth:1,titleColor:'#4a6a8a',bodyColor:'#c8d8e8',bodyFont:{family:'Share Tech Mono',size:11}} },
-  scales:{
-    x:{ticks:{color:'#2a4a6a',font:{size:9},maxTicksLimit:10},grid:{color:'rgba(26,45,69,0.35)'},border:{color:'#1a2d45'}},
-    y:{ticks:{color:'#2a4a6a',font:{size:9,family:'Share Tech Mono'}},grid:{color:'rgba(26,45,69,0.2)'},border:{color:'#1a2d45'}}
-  }
+const BASE={
+  responsive:true,maintainAspectRatio:false,animation:{duration:500},
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#0d1520',borderColor:'#1a2d45',borderWidth:1,titleColor:'#4a6a8a',bodyColor:'#c8d8e8',bodyFont:{family:'Share Tech Mono',size:11}}},
+  scales:{x:{ticks:{color:'#2a4a6a',font:{size:9},maxTicksLimit:10},grid:{color:'rgba(26,45,69,0.35)'},border:{color:'#1a2d45'}},y:{ticks:{color:'#2a4a6a',font:{size:9,family:'Share Tech Mono'}},grid:{color:'rgba(26,45,69,0.2)'},border:{color:'#1a2d45'}}}
 };
+function dc(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
 
-function destroyChart(id) { if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];} }
-
-function renderPnL(labels, pnls) {
-  destroyChart('pnlChart');
-  const ctx = document.getElementById('pnlChart').getContext('2d');
-  const g = ctx.createLinearGradient(0,0,0,240);
-  g.addColorStop(0,'rgba(0,255,135,0.22)');
-  g.addColorStop(1,'rgba(0,255,135,0)');
-  chartInstances['pnlChart'] = new Chart(ctx, {
-    type:'line',
-    data:{ labels, datasets:[{data:pnls,borderColor:'#00ff87',borderWidth:2,backgroundColor:g,fill:true,pointRadius:0,tension:0.2}] },
-    options:{...BASE, plugins:{...BASE.plugins, tooltip:{...BASE.plugins.tooltip, callbacks:{label:c=>' '+c.parsed.y.toFixed(2)+' 萬'}}}}
-  });
+function renderPnL(labels,pnls){
+  dc('pnlChart');
+  const ctx=document.getElementById('pnlChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,240);g.addColorStop(0,'rgba(0,255,135,0.22)');g.addColorStop(1,'rgba(0,255,135,0)');
+  _charts['pnlChart']=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:pnls,borderColor:'#00ff87',borderWidth:2,backgroundColor:g,fill:true,pointRadius:0,tension:0.2}]},options:{...BASE,plugins:{...BASE.plugins,tooltip:{...BASE.plugins.tooltip,callbacks:{label:c=>' '+c.parsed.y.toFixed(2)+' 萬'}}}}});
 }
-
-function renderDiff(labels, diffs) {
-  destroyChart('diffChart');
-  const ctx = document.getElementById('diffChart').getContext('2d');
-  chartInstances['diffChart'] = new Chart(ctx, {
-    type:'bar',
-    data:{ labels, datasets:[{data:diffs,backgroundColor:diffs.map(d=>d>0?'rgba(0,212,255,0.6)':'rgba(255,51,102,0.5)'),borderWidth:0}] },
-    options:{...BASE, plugins:{...BASE.plugins, tooltip:{...BASE.plugins.tooltip, callbacks:{label:c=>' '+c.parsed.y.toFixed(3)+'%'}}}}
-  });
+function renderDiff(labels,diffs){
+  dc('diffChart');
+  const ctx=document.getElementById('diffChart').getContext('2d');
+  _charts['diffChart']=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:diffs,backgroundColor:diffs.map(d=>d>0?'rgba(0,212,255,0.6)':'rgba(255,51,102,0.5)'),borderWidth:0}]},options:{...BASE,plugins:{...BASE.plugins,tooltip:{...BASE.plugins.tooltip,callbacks:{label:c=>' '+c.parsed.y.toFixed(3)+'%'}}}}});
 }
-
-function renderPerf(labels, tperfs, xperfs) {
-  destroyChart('perfChart');
-  const ctx = document.getElementById('perfChart').getContext('2d');
-  chartInstances['perfChart'] = new Chart(ctx, {
-    type:'line',
-    data:{ labels, datasets:[
-      {label:'台積電月績效',data:tperfs,borderColor:'#00d4ff',borderWidth:1.5,pointRadius:0,tension:0.2,fill:false},
-      {label:'台指期月績效',data:xperfs,borderColor:'#ff6b35',borderWidth:1.5,pointRadius:0,tension:0.2,fill:false}
-    ]},
-    options:{...BASE, plugins:{...BASE.plugins, legend:{display:true,labels:{color:'#4a6a8a',font:{size:10},boxWidth:10}}, tooltip:{...BASE.plugins.tooltip,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(2)+'%'}}}}
-  });
+function renderPerf(labels,tp,xp){
+  dc('perfChart');
+  const ctx=document.getElementById('perfChart').getContext('2d');
+  _charts['perfChart']=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'台積電月績效',data:tp,borderColor:'#00d4ff',borderWidth:1.5,pointRadius:0,tension:0.2,fill:false},{label:'台指期月績效',data:xp,borderColor:'#ff6b35',borderWidth:1.5,pointRadius:0,tension:0.2,fill:false}]},options:{...BASE,plugins:{...BASE.plugins,legend:{display:true,labels:{color:'#4a6a8a',font:{size:10},boxWidth:10}},tooltip:{...BASE.plugins.tooltip,callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(2)+'%'}}}}});
 }
-
-function renderTrades(trades, fmtDate) {
-  const tbody = document.getElementById('tradeTableBody');
-  tbody.innerHTML = '';
-  [...trades].reverse().forEach((t, i) => {
-    const n = trades.length - i;
-    const isOpen = t.open;
-    const nc = isOpen ? 'hold' : (t.net>=0?'win':'lose');
-    const ns = isOpen ? `~${t.net.toFixed(2)}` : (t.net>=0?`+${t.net.toFixed(2)}`:`${t.net.toFixed(2)}`);
-    const ec = t.ep>=0?'win':'lose'; const tc = t.tp>=0?'win':'lose';
-    const eps = (t.ep>=0?'+':'')+t.ep; const tps = (t.tp>=0?'+':'')+t.tp;
-    const status = isOpen
-      ? '<span style="color:var(--yellow)">●持倉中</span>'
-      : (t.net>=0?'<span style="color:var(--green)">✓獲利</span>':'<span style="color:var(--red)">✗虧損</span>');
-    const tag2cls = isOpen?'tag-open':'tag-exit';
-    const tag2txt = isOpen?'OPEN':'EXIT';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="color:var(--dim)">${n}</td><td><span class="tag tag-long">LONG</span>${fmtDate(t.entry)}</td><td><span class="tag ${tag2cls}">${tag2txt}</span>${t.exit?fmtDate(t.exit):'—'}</td><td>${t.days}d</td><td class="${ec}">${eps}</td><td class="${tc}">${tps}</td><td class="${nc}" style="font-weight:700">${ns}</td><td>${status}</td>`;
-    tbody.appendChild(tr);
+function renderTrades(trades,fd){
+  const tb=document.getElementById('tradeTbody');tb.innerHTML='';
+  [...trades].reverse().forEach((t,i)=>{
+    const n=trades.length-i,io=t.open;
+    const nc=io?'hold':(t.net>=0?'win':'lose');
+    const ns=io?`~${t.net.toFixed(2)}`:(t.net>=0?`+${t.net.toFixed(2)}`:`${t.net.toFixed(2)}`);
+    const ec=t.ep>=0?'win':'lose',xc=t.xp>=0?'win':'lose';
+    const st=io?'<span style="color:var(--yellow)">●持倉中</span>':(t.net>=0?'<span style="color:var(--green)">✓獲利</span>':'<span style="color:var(--red)">✗虧損</span>');
+    const t2c=io?'tag-open':'tag-exit',t2t=io?'OPEN':'EXIT';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:var(--dim)">${n}</td><td><span class="tag tag-long">LONG</span>${fd(t.entry)}</td><td><span class="tag ${t2c}">${t2t}</span>${t.exit?fd(t.exit):'—'}</td><td>${t.days}d</td><td class="${ec}">${(t.ep>=0?'+':'')+t.ep}</td><td class="${xc}">${(t.xp>=0?'+':'')+t.xp}</td><td class="${nc}" style="font-weight:700">${ns}</td><td>${st}</td>`;
+    document.getElementById('tradeTbody').appendChild(tr);
   });
 }
 
 // ══════════════════════════════════════════════════════
-// HELPERS
+//  ERROR / MISC
 // ══════════════════════════════════════════════════════
-function setMsg(type, txt) {
-  const el = document.getElementById('msgBar');
-  el.className = 'msg-bar ' + type;
-  el.textContent = txt;
-}
+function showErr(msg){const e=document.getElementById('errBar');e.style.display='block';e.innerHTML='❌ '+msg.replace(/\n/g,'<br>');}
+function hideErr(){document.getElementById('errBar').style.display='none';}
 
 // ══════════════════════════════════════════════════════
-// INIT — run built-in data on load
+//  INIT — 開頁直接讀取
 // ══════════════════════════════════════════════════════
 window.addEventListener('load', () => {
-  runBacktest(BUILTIN, 21, 1, 1, '內建數據');
+  doLoad(APPS_SCRIPT_URL);
 });
 </script>
 </body>
