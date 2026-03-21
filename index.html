@@ -573,15 +573,15 @@
 
       <!-- Strategy description: combo -->
       <div id="strat-desc-combo" style="display:none;font-size:10px;line-height:1.7;margin-bottom:14px;padding:10px 12px;background:rgba(255,107,53,0.07);border-radius:8px;border-left:2px solid #ff6b35">
-        <div style="color:var(--text);font-weight:700;margin-bottom:4px;letter-spacing:0.5px">雙條件 AND 策略（差值突破 ＋ Z強弱同向）</div>
+        <div style="color:var(--text);font-weight:700;margin-bottom:4px;letter-spacing:0.5px">雙條件 AND 策略（差值突破 ＋ 月績效策略）</div>
         <div style="color:var(--text-dim)">
           <span style="color:#ff6b35">【做多電子空台指】</span>需同時符合：<br>
           　① 差值Z &lt; −閾值（TX_z 相對偏低）<br>
-          　② 電子Z &gt; 台指Z（TE 相對強勢）<br>
+          　② Perf_TSMC &gt; Perf_TX（台積電月績效較強）<br>
           <span style="color:#ff6b35">【做多台指空電子】</span>需同時符合：<br>
           　① 差值Z &gt; +閾值（TX_z 相對偏高）<br>
-          　② 電子Z &lt; 台指Z（TX 相對強勢）<br>
-          <span style="color:rgba(255,255,255,0.3)">兩條件同時成立才進場，過濾雜訊</span>
+          　② Perf_TX &gt; Perf_TSMC（台指期月績效較強）<br>
+          <span style="color:rgba(255,255,255,0.3)">兩條件同時成立才進場　回望天數同月績效策略設定</span>
         </div>
       </div>
 
@@ -599,10 +599,10 @@
       <!-- Perf strategy params -->
       <div id="field-perf-params" style="display:none">
         <div class="bt-field">
-          <label>回望天數 N <span class="range-val" id="val-lookback">6</span> 天</label>
+          <label>回望天數 N <span class="range-val" id="val-lookback">21</span> 天</label>
           <div class="range-row">
             <span style="font-size:10px;color:var(--text-dim)">5</span>
-            <input type="range" id="sl-lookback" min="5" max="60" step="1" value="6"
+            <input type="range" id="sl-lookback" min="5" max="60" step="1" value="21"
               oninput="document.getElementById('val-lookback').textContent=this.value">
             <span style="font-size:10px;color:var(--text-dim)">60</span>
           </div>
@@ -618,10 +618,10 @@
           </div>
         </div>
         <div class="bt-field">
-          <label>小台口數 <span class="range-val" id="val-txlots">4</span> 口</label>
+          <label>小台口數 <span class="range-val" id="val-txlots">1</span> 口</label>
           <div class="range-row">
             <span style="font-size:10px;color:var(--text-dim)">1</span>
-            <input type="range" id="sl-txlots" min="1" max="10" step="1" value="4"
+            <input type="range" id="sl-txlots" min="1" max="10" step="1" value="1"
               oninput="document.getElementById('val-txlots').textContent=this.value">
             <span style="font-size:10px;color:var(--text-dim)">10</span>
           </div>
@@ -634,10 +634,10 @@
 
       <!-- Spread strategy: entry threshold -->
       <div class="bt-field" id="field-entry-thresh">
-        <label>進場閾值　|差值 Z| ≥ <span class="range-val" id="val-entry">-0.1</span>σ</label>
+        <label>進場閾值　|差值 Z| ≥ <span class="range-val" id="val-entry">1.5</span>σ</label>
         <div class="range-row">
           <span style="font-size:10px;color:var(--text-dim)">−3.0</span>
-          <input type="range" id="sl-entry" min="-3.0" max="3.0" step="0.1" value="-0.1"
+          <input type="range" id="sl-entry" min="-3.0" max="3.0" step="0.1" value="1.5"
             oninput="document.getElementById('val-entry').textContent=parseFloat(this.value).toFixed(1)">
           <span style="font-size:10px;color:var(--text-dim)">+3.0</span>
         </div>
@@ -648,7 +648,7 @@
         <label>電子Z 超過台指Z 達 <span class="range-val" id="val-zthresh">0.0</span>σ 才進場</label>
         <div class="range-row">
           <span style="font-size:10px;color:var(--text-dim)">0.0</span>
-          <input type="range" id="sl-zthresh" min="0.0" max="3.0" step="0.1" value="-0.1"
+          <input type="range" id="sl-zthresh" min="0.0" max="3.0" step="0.1" value="0.0"
             oninput="document.getElementById('val-zthresh').textContent=parseFloat(this.value).toFixed(1)">
           <span style="font-size:10px;color:var(--text-dim)">3.0</span>
         </div>
@@ -668,10 +668,10 @@
       <div class="bt-section-label">📤 出場條件</div>
 
       <div class="bt-field">
-        <label>出場閾值　差值 Z 回歸至 <span class="range-val" id="val-exit">-0.1</span>σ</label>
+        <label>出場閾值　差值 Z 回歸至 <span class="range-val" id="val-exit">0.0</span>σ</label>
         <div class="range-row">
           <span style="font-size:10px;color:var(--text-dim)">−3.0</span>
-          <input type="range" id="sl-exit" min="-3.0" max="3.0" step="0.1" value="-0.1"
+          <input type="range" id="sl-exit" min="-3.0" max="3.0" step="0.1" value="0.0"
             oninput="document.getElementById('val-exit').textContent=parseFloat(this.value).toFixed(1)">
           <span style="font-size:10px;color:var(--text-dim)">+3.0</span>
         </div>
@@ -1003,6 +1003,19 @@ function render(rows) {
     <div class="chart-wrapper">
       <div class="chart-title">
         <div class="legend">
+          <div class="legend-item"><div class="dot" style="background:var(--tx-color)"></div>台指期 (TX)</div>
+          <div class="legend-item"><div class="dot" style="background:var(--te-color)"></div>電子期 (TE)</div>
+        </div>
+        原始價格走勢
+      </div>
+      <div style="height:200px;position:relative">
+        <canvas id="priceChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-wrapper">
+      <div class="chart-title">
+        <div class="legend">
           <div class="legend-item"><div class="dot" style="background:var(--accent)"></div>TX − TE</div>
         </div>
         Z-SCORE 差值 (TX − TE)
@@ -1048,6 +1061,85 @@ function render(rows) {
     },
     options: baseChartOpts('Z-Score'),
     plugins: [zeroLinePlugin('zeroZ')],
+  });
+
+  // Price chart (TX & TE raw prices, dual Y-axis)
+  if (charts.price) charts.price.destroy();
+  charts.price = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '台指期 (TX)',
+          data: subset.map(r => r.tx),
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0,212,255,0.04)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.3,
+          fill: false,
+          yAxisID: 'yTx',
+        },
+        {
+          label: '電子期 (TE)',
+          data: subset.map(r => r.te),
+          borderColor: '#ff6b35',
+          backgroundColor: 'rgba(255,107,53,0.04)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.3,
+          fill: false,
+          yAxisID: 'yTe',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(10,12,20,0.95)',
+          borderColor: '#1e2340',
+          borderWidth: 1,
+          titleColor: '#c8cfe8',
+          bodyColor: '#7c8ab0',
+          padding: 10,
+          titleFont: { family: 'Space Mono', size: 11 },
+          bodyFont: { family: 'Space Mono', size: 11 },
+          callbacks: {
+            label: ctx => {
+              const val = ctx.raw;
+              const name = ctx.dataset.label;
+              return ` ${name}: ${val.toLocaleString()}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5a6285', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 10, maxRotation: 0 },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+        },
+        yTx: {
+          position: 'left',
+          title: { display: true, text: 'TX', color: '#00d4ff', font: { family: 'Space Mono', size: 9 } },
+          ticks: { color: '#00d4ff', font: { family: 'Space Mono', size: 9 } },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+        },
+        yTe: {
+          position: 'right',
+          title: { display: true, text: 'TE', color: '#ff6b35', font: { family: 'Space Mono', size: 9 } },
+          ticks: { color: '#ff6b35', font: { family: 'Space Mono', size: 9 } },
+          grid: { drawOnChartArea: false },
+        }
+      },
+      animation: { duration: 400 },
+    },
   });
 
   // Diff chart
@@ -1325,9 +1417,18 @@ function runSpreadBacktest() {
         if (btStrategy === 'spread') {
           if (isShort  && d <= exitThresh)  closeReason = 'SIG';
           if (!isShort && d >= -exitThresh) closeReason = 'SIG';
-        } else { // combo
-          if (isShort  && (d <= exitThresh || g <= exitThresh))  closeReason = 'SIG';
-          if (!isShort && (d >= -exitThresh || g >= -exitThresh)) closeReason = 'SIG';
+        } else { // combo: exit if spread reverts OR perf signal flips
+          const cLb = parseInt(document.getElementById('sl-lookback')?.value) || 21;
+          let livePerfTE = pos.entryPerfTE, livePerfTX = pos.entryPerfTX;
+          if (i >= cLb && allData[i].tsmc && allData[i-cLb]?.tsmc) {
+            const pt = allData[i].tsmc / allData[i-cLb].tsmc;
+            const px = txPrices[i]    / txPrices[i-cLb];
+            livePerfTE = pt > px;
+            livePerfTX = px > pt;
+          }
+          // Exit: spread reverts through threshold OR perf condition no longer holds
+          if (isShort  && (d <= exitThresh || !livePerfTE)) closeReason = 'SIG';
+          if (!isShort && (d >= -exitThresh || !livePerfTX)) closeReason = 'SIG';
         }
       }
 
@@ -1357,16 +1458,35 @@ function runSpreadBacktest() {
       if (btStrategy === 'spread') {
         if (d >  entryThresh && (direction==='both'||direction==='short')) signalDir = 'short_spread';
         else if (d < -entryThresh && (direction==='both'||direction==='long'))  signalDir = 'long_spread';
-      } else { // combo
-        const longTE = d < -entryThresh && g > 0;
-        const longTX = d >  entryThresh && g < 0;
+      } else { // combo: spread threshold AND monthly perf signal
+        const comboLb = parseInt(document.getElementById('sl-lookback')?.value) || 21;
+        let perfLongTE = false, perfLongTX = false;
+        if (i >= comboLb && allData[i].tsmc && allData[i-comboLb] && allData[i-comboLb].tsmc) {
+          const perfTsmc = allData[i].tsmc / allData[i-comboLb].tsmc;
+          const perfTx   = txPrices[i]    / txPrices[i-comboLb];
+          perfLongTE = perfTsmc > perfTx;
+          perfLongTX = perfTx   > perfTsmc;
+        }
+        const longTE = d < -entryThresh && perfLongTE;
+        const longTX = d >  entryThresh && perfLongTX;
         if (longTE && (direction==='both'||direction==='short')) signalDir = 'short_spread';
         else if (longTX && (direction==='both'||direction==='long'))  signalDir = 'long_spread';
       }
       if (signalDir) {
         const teDir = signalDir === 'short_spread' ?  1 : -1;
         const txDir = signalDir === 'short_spread' ? -1 :  1;
-        pos = { signalDir, entryIdx: i, txEntry: txP, teEntry: teP, txDir, teDir, entryDiff: d, entryGap: g };
+        // For combo: also track current perf signal direction for exit
+        const comboLb2 = btStrategy === 'combo'
+          ? (parseInt(document.getElementById('sl-lookback')?.value) || 21) : 0;
+        let entryPerfTE = false, entryPerfTX = false;
+        if (btStrategy === 'combo' && comboLb2 > 0 && i >= comboLb2 && allData[i].tsmc && allData[i-comboLb2]?.tsmc) {
+          const pt = allData[i].tsmc / allData[i-comboLb2].tsmc;
+          const px = txPrices[i]    / txPrices[i-comboLb2];
+          entryPerfTE = pt > px;
+          entryPerfTX = px > pt;
+        }
+        pos = { signalDir, entryIdx: i, txEntry: txP, teEntry: teP, txDir, teDir,
+                entryDiff: d, entryGap: g, entryPerfTE, entryPerfTX };
       }
     }
 
