@@ -1004,8 +1004,7 @@ function render(rows) {
       <div class="chart-title">
         <div class="legend">
           <div class="legend-item"><div class="dot" style="background:var(--tx-color)"></div>台指期 (TX)</div>
-          <div class="legend-item"><div class="dot" style="background:var(--te-color)"></div>電子期 (TE)</div>
-        </div>
+          </div>
         原始價格走勢
       </div>
       <div style="height:200px;position:relative">
@@ -1046,17 +1045,7 @@ function render(rows) {
           tension: 0.3,
           fill: false,
         },
-        {
-          label: '電子期 Z',
-          data: teZ,
-          borderColor: '#ff6b35',
-          backgroundColor: 'rgba(255,107,53,0.06)',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          tension: 0.3,
-          fill: false,
-        }
+        
       ]
     },
     options: baseChartOpts('Z-Score'),
@@ -1082,18 +1071,7 @@ function render(rows) {
           fill: false,
           yAxisID: 'yTx',
         },
-        {
-          label: '電子期 (TE)',
-          data: subset.map(r => r.te),
-          borderColor: '#ff6b35',
-          backgroundColor: 'rgba(255,107,53,0.04)',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          tension: 0.3,
-          fill: false,
-          yAxisID: 'yTe',
-        }
+        
       ]
     },
     options: {
@@ -1131,12 +1109,7 @@ function render(rows) {
           ticks: { color: '#00d4ff', font: { family: 'Space Mono', size: 9 } },
           grid: { color: 'rgba(255,255,255,0.06)' },
         },
-        yTe: {
-          position: 'right',
-          title: { display: true, text: 'TE', color: '#ff6b35', font: { family: 'Space Mono', size: 9 } },
-          ticks: { color: '#ff6b35', font: { family: 'Space Mono', size: 9 } },
-          grid: { drawOnChartArea: false },
-        }
+        
       },
       animation: { duration: 400 },
     },
